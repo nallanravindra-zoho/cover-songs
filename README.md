@@ -39,7 +39,7 @@ Fonts for the previews load from Google Fonts, so the page needs internet.
 Same from the terminal:
 ```
 .venv/bin/python tools/build_song.py songs/<song> --mode align
-.venv/bin/python tools/build_song.py songs/<song> --mode preview --output reel --from 1:00 --to 1:30   # seconds, e.g. 60 and 90
+.venv/bin/python tools/build_song.py songs/<song> --mode preview --output reel --from 60 --to 90   # on the command line these are seconds
 .venv/bin/python tools/build_song.py songs/<song> --mode final --output all
 ```
 Files land in `songs/<song>/out/<output>_<preview|final>.mp4`.
