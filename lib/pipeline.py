@@ -334,7 +334,7 @@ def interludes_for(c, times, dur, min_gap):
 
 
 def frame_for_cards(c, work, dur):
-    f = work / "frame.jpg"
+    f = work / f"frame_{sig(video_path(c))}.jpg"          # one per video, so a replaced video gets its own card background
     if not f.exists():
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{dur * 0.3:.1f}", "-i", str(video_path(c)), "-frames:v", "1", "-vf",
                         "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920", str(f)], check=True)
@@ -489,6 +489,9 @@ def build_output(c, name, mode, rng, screens, times, IL, dur, look0, frame, T, R
         else:
             log(f"NOTE interlude {mmss(p['start'])}-{mmss(p['end'])} skipped: it overlaps a card or another picture")
     keep.sort(key=lambda p: p["start"])
+    for p_ in pics:
+        if p_["kind"] in ("opening", "ending") and not (p_["start"] >= clip[0] - 0.01 and p_["end"] <= clip[1] + 0.01):
+            log(f"NOTE the {p_['kind']} card ({mmss(p_['start'])}-{mmss(p_['end'])}) is not in this video: it lies outside {mmss(clip[0])}-{mmss(clip[1])}")
     log("STEP putting the video together")
     R.compose(src, sc, logo, keep, out / f"{name}_{mode}.mp4", (W, H), layout, 30, dur_total=dur, clip=clip, fade=float(oc.get("fade") or 0), audio=aligned_audio(c, work, dur))
     report = {"output": name, "size": [W, H], "clip": clip, "screens": [{"lines": s["lines"], "start": s["start"], "end": s["end"]} for s in sc],

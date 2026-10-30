@@ -28,10 +28,12 @@
     null,
     null,
     null,
+    187.56,
+    197.1,
     null,
     null,
     null,
-    null,
+    260,
     null,
     null,
     null,
@@ -58,10 +60,12 @@
     null,
     null,
     null,
+    187.56,
+    197,
     null,
     null,
     null,
-    null,
+    259,
     null,
     null,
     null,
@@ -150,12 +154,14 @@
     {
       "photo": "snap_0m20s_00203.png"
     },
-    {},
     {
-      "photo": "snap_0m41s_00420.png"
+      "photo": "snap_0m20s_00203.png"
     },
     {
-      "photo": "snap_1m03s_00637.png"
+      "photo": "snap_1m26s_00863.png"
+    },
+    {
+      "photo": "snap_1m48s_01090.png"
     }
   ],
   "look": {
@@ -212,24 +218,24 @@
   },
   "transitions": {
     "opening_to_video": {
-      "name": "pixelize",
-      "seconds": 0.8
+      "name": "barslide",
+      "seconds": 1.1
     },
     "section_to_section": {
       "name": "dissolve",
       "seconds": 0.6
     },
     "video_to_end": {
-      "name": "fade",
-      "seconds": 1
+      "name": "rectcrop",
+      "seconds": 1.5
     },
     "interlude_in": {
-      "name": "pixelize",
-      "seconds": 0.8
+      "name": "coverup",
+      "seconds": 1.1
     },
     "interlude_out": {
-      "name": "fadeblack",
-      "seconds": 0.8
+      "name": "hblur",
+      "seconds": 1.1
     },
     "video_to_interlude": {
       "name": "fade",
