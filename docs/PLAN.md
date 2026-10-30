@@ -1,4 +1,8 @@
-# Plan (carried over from the earlier session, adjusted after the sample analysis)
+# Plan (original plan, with what has since been built)
+
+> **Status (2026-10-31):** all three phases are largely built; see README.md for how it works now. Still open: syncing is done for a separate master audio, but
+> not for a raw video recorded separately from a clean mastered audio without any song in its own sound; cover image + caption export; batch weekly checklist;
+> her confirmed font. Below is the original plan for reference.
 
 Goal: each week Ravi supplies the raw files; the tool outputs the finished 9:16 video.
 Her workflow: record vocal on a karaoke track -> master -> record video in one take, lip-syncing -> line the video up
@@ -16,7 +20,7 @@ final export (reference), mastered audio, vocal stem, raw video, photos, lyrics 
 | Opening / end cards, logo | from `credits.json` + `brand/` | high |
 | Transitions | the transition set from raaga-thoram (ffmpeg xfade) | high |
 | Lyrics text | pasted, labelled, two lines at a time, house style | high |
-| **Lyric line timing** | 1) tap-along (about 3 min per song, exact) 2) assisted from the vocal stem 3) forced alignment, experiment only | tap: high, auto: unproven |
+| **Lyric line timing** | forced alignment of her typed lyrics on the voice (built, automatic), with tap-along and typed times as corrections | auto: good on tested songs, flags what it is unsure of |
 | Export | 1080x1920 first; later 16:9 and a cover image + caption text | high |
 
 ## Phases
@@ -30,7 +34,7 @@ venv + ffmpeg compose; Playwright frame rendering; `tools/matte` Apple Vision pe
 ## Working rules
 Large readable text; explanations behind an "i" icon; keys/notes only as names; honest reporting (audio is measured, not heard); Ravi tests on his own phone.
 
-## Lyrics demo (2026-10-30, `tools/lyric_demo.py`)
+## Early lyrics demo (2026-10-30; the script `tools/lyric_demo.py` no longer exists, `tools/build_song.py` replaced it)
 Test on a finished film video (songs/bachpan, not her cover): demucs vocal stem -> MMS forced aligner (lib/align.py, gated to where the
 vocal stem has sound, one-word fillers ignored for timing) = Version A; faster-whisper medium with a Hindi prompt (lib/transcribe.py) = Version B;
 interludes = gaps of 6 s or more between lyric screens, filled with placeholder pictures; rendered by lib/render.py (Chrome PNGs + ffmpeg);

@@ -17,7 +17,8 @@ A local settings page (`settings.py`, port 8766) drives everything. Owner: Ravi 
 - `lib/lyrics.py`    lyrics text -> screens ([label] blocks, [order], [Aalap] blocks, long-line and comma splitting).
 - `lib/align.py`     forced alignment with torchaudio MMS_FA (romanised with uroman). `lib/voice.py` voice-activity map.
 - `lib/sync.py`      finds where a separate master audio sits inside the video's sound (spectral cross-correlation).
-- `lib/pipeline.py`  the build: voice source (vocal > master > video), placement, warnings, gaps/interludes, outputs, `compose` call.
+- `lib/pipeline.py`  the build: voice source (vocal > master > video) + `sync_info` offset, placement, warnings, gaps/interludes, outputs, `compose`.
+                     Lyrics `[Aalap]` blocks are timed from the voice (star token in the aligner), not matched to words.
 - `lib/render.py`    Chrome (Playwright) draws text/cards to PNG, ffmpeg composes; `lib/anim.js` text animations (shared with the page);
                      `lib/trans.py` extra xfade transitions as expressions.
 - `songs/<song>/`    `song.json`, `lyrics.txt`, `credits.json` (tracked); media, `work/`, `out/`, `snapshots/` (ignored).
@@ -30,6 +31,8 @@ A local settings page (`settings.py`, port 8766) drives everything. Owner: Ravi 
 - ffmpeg `xfade` custom expressions must sample planes (`a0/a1/a2`); `lib/trans.py` expands `A()`/`B()`.
 - torch 2.2.2 needs `numpy<2`; scipy pinned `<1.14`; demucs 4.0.1 is installed `--no-deps`.
 - After changing settings/page code, restart the server (`pkill -f settings.py; .venv/bin/python settings.py`).
+- Card backgrounds are cached per video (`frame_<sig>.jpg`); a preview range that excludes a card is logged, not an error.
+- The video can be very large (1.5 GB): never decode it whole; seek with `-ss` before `-i`, and take audio from the master when there is one.
 - Test on both songs in `songs/` (a Hindi and a Telugu one); a fix tested on only one has broken the other before.
 
 ## Common commands
