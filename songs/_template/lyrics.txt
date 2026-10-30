@@ -1,0 +1,14 @@
+# One label line per part, then the lines of that part. Lines are shown two at a time.
+# Labels: pallavi, charanam 1, charanam 2, ... A part that comes back (the pallavi) is written once
+# and repeated by the order line at the bottom.
+
+[pallavi]
+first line of the pallavi
+second line of the pallavi
+
+[charanam 1]
+first line of the charanam
+second line of the charanam
+
+[order]
+pallavi, charanam 1, pallavi

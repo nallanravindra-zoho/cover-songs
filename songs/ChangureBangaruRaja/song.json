@@ -1,0 +1,258 @@
+{
+  "title": "Changure Bangaru Raja",
+  "language": "telugu",
+  "files": {
+    "master": "master.mp3",
+    "vocal": null,
+    "raw_video": "raw_video.mov",
+    "final_export": "final_export.mp4",
+    "logo": "logo.jpg"
+  },
+  "sync": {
+    "method": "auto",
+    "raw_video_offset": null,
+    "use_master_audio": true
+  },
+  "sections": [],
+  "lyric_times": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+  ],
+  "lyric_ends": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+  ],
+  "text_anim": {
+    "in": "fade",
+    "out": "reverse",
+    "in_seconds": 0.5,
+    "out_seconds": 0.3
+  },
+  "auto_place": true,
+  "outputs": {
+    "instagram": {
+      "label": "Instagram / Facebook (9:16)",
+      "enabled": true,
+      "layout": "portrait",
+      "width": 1080,
+      "preview_width": 540,
+      "opening": true,
+      "ending": true,
+      "interludes": true,
+      "text_scale": 1,
+      "start": null,
+      "length": null,
+      "fade": 0,
+      "text_anim": {},
+      "look": {}
+    },
+    "youtube": {
+      "label": "YouTube (side by side, 16:9)",
+      "enabled": true,
+      "layout": "side",
+      "width": 1920,
+      "preview_width": 1280,
+      "split": 0.555,
+      "video_focus": 0.3,
+      "blur": 36,
+      "opening": true,
+      "ending": true,
+      "interludes": true,
+      "text_scale": 0.8,
+      "card_scale": 0.5,
+      "start": null,
+      "length": null,
+      "fade": 0,
+      "text_anim": {},
+      "look": {
+        "lyrics_top": 0.36,
+        "logo_x": 0.04,
+        "logo_y": 0.8,
+        "logo_size": 0.24
+      }
+    },
+    "reel": {
+      "label": "1-minute reel (stories, WhatsApp, 9:16)",
+      "enabled": true,
+      "layout": "portrait",
+      "width": 1080,
+      "preview_width": 540,
+      "opening": false,
+      "ending": false,
+      "interludes": true,
+      "text_scale": 1,
+      "start": null,
+      "length": 60,
+      "snap_to_line": true,
+      "fade": 0.5,
+      "text_anim": {},
+      "look": {}
+    }
+  },
+  "photo_use": {},
+  "photo_motion": "zoom_in",
+  "interlude_min_seconds": 10,
+  "interludes": [
+    {
+      "photo": "snap_0m20s_00203.png"
+    },
+    {},
+    {
+      "photo": "snap_0m41s_00420.png"
+    },
+    {
+      "photo": "snap_1m03s_00637.png"
+    }
+  ],
+  "look": {
+    "lyrics_font": "Noto Sans Telugu",
+    "lyrics_weight": 700,
+    "lyrics_size": 58,
+    "lyrics_lines": 2,
+    "lyrics_top": 0.17,
+    "lyrics_fill_left": "#ff4f8b",
+    "lyrics_fill_mid": "#f2dcec",
+    "lyrics_fill_right": "#7fe6e0",
+    "lyrics_outline": "#3a0f2e",
+    "lyrics_outline_w": 0.1,
+    "lyrics_glow": "#6a3bd9",
+    "credits_font": "Noto Sans Telugu",
+    "credits_weight": 700,
+    "credits_size": 56,
+    "credits_fill_left": "#ff4f8b",
+    "credits_fill_right": "#ffb3c1",
+    "credits_outline": "#0d0620",
+    "credits_glow": "#ff4fa3",
+    "title_size": 104,
+    "title_fill_left": "#ff4f8b",
+    "title_fill_right": "#ffb3c1",
+    "title_outline": "#0d0620",
+    "title_glow": "#ff4fa3",
+    "logo_mode": "image",
+    "logo_font": "Kaushan Script",
+    "logo_text": "Soujanya Madabhushi",
+    "logo_fill_left": "#ffe45e",
+    "logo_fill_mid": "#ffb27a",
+    "logo_fill_right": "#ff7a95",
+    "logo_outline": "#1a0a14",
+    "logo_outline_w": 0.12,
+    "logo_glow": "#c2185b",
+    "logo_size": 0.34,
+    "logo_x": 0.06,
+    "logo_y": 0.03,
+    "end_font": "Kaushan Script",
+    "end_size": 150,
+    "end_fill": "#1f9a4a",
+    "end_outline": "#05140a",
+    "end_outline_w": 0.13,
+    "end_glow": "#9bff9b",
+    "end_tint": "#1f8f4a",
+    "end_blur": 24,
+    "lyrics_color": "#ffffff",
+    "lyrics_glow_a": "#ff4fa3",
+    "lyrics_glow_b": "#35e0e0",
+    "credits_color": "#ffffff",
+    "title_color": "#ffffff",
+    "logo_color": "#fff3c4",
+    "end_color": "#0f6b3a"
+  },
+  "transitions": {
+    "opening_to_video": {
+      "name": "pixelize",
+      "seconds": 0.8
+    },
+    "section_to_section": {
+      "name": "dissolve",
+      "seconds": 0.6
+    },
+    "video_to_end": {
+      "name": "fade",
+      "seconds": 1
+    },
+    "interlude_in": {
+      "name": "pixelize",
+      "seconds": 0.8
+    },
+    "interlude_out": {
+      "name": "fadeblack",
+      "seconds": 0.8
+    },
+    "video_to_interlude": {
+      "name": "fade",
+      "seconds": 0.8
+    },
+    "interlude_to_video": {
+      "name": "fade",
+      "seconds": 0.8
+    }
+  },
+  "opening": {
+    "photo": null,
+    "seconds": 6,
+    "enabled": true
+  },
+  "ending": {
+    "photo": null,
+    "seconds": 6,
+    "enabled": true
+  },
+  "export": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  }
+}

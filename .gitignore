@@ -1,0 +1,27 @@
+# local environment
+.venv/
+__pycache__/
+.DS_Store
+
+# raw inputs, builds and generated media stay on this machine
+songs/*/*.mp4
+songs/*/*.mov
+songs/*/*.m4v
+songs/*/*.mp3
+songs/*/*.wav
+songs/*/*.m4a
+songs/*/*.aac
+songs/*/*.flac
+songs/*/photos/*
+!songs/_template/photos/.gitkeep
+songs/*/out/
+songs/*/work/
+ui/previews/
+tools/bin/
+content/fonts/
+*.mp4
+*.mov
+*.wav
+*.m4a
+songs/*/snapshots/
+brand/logo.*

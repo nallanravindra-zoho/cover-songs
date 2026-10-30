@@ -1,0 +1,84 @@
+{
+  "look": {
+    "lyrics_font": "Noto Sans Telugu",
+    "lyrics_weight": 700,
+    "lyrics_size": 58,
+    "lyrics_lines": 2,
+    "lyrics_top": 0.17,
+    "lyrics_fill_left": "#ff4f8b",
+    "lyrics_fill_mid": "#f2dcec",
+    "lyrics_fill_right": "#7fe6e0",
+    "lyrics_outline": "#3a0f2e",
+    "lyrics_outline_w": 0.1,
+    "lyrics_glow": "#6a3bd9",
+    "credits_font": "Noto Sans Telugu",
+    "credits_weight": 700,
+    "credits_size": 56,
+    "credits_fill_left": "#ff4f8b",
+    "credits_fill_right": "#ffb3c1",
+    "credits_outline": "#0d0620",
+    "credits_glow": "#ff4fa3",
+    "title_size": 104,
+    "title_fill_left": "#ff4f8b",
+    "title_fill_right": "#ffb3c1",
+    "title_outline": "#0d0620",
+    "title_glow": "#ff4fa3",
+    "logo_mode": "image",
+    "logo_font": "Kaushan Script",
+    "logo_text": "Soujanya Madabhushi",
+    "logo_fill_left": "#ffe45e",
+    "logo_fill_mid": "#ffb27a",
+    "logo_fill_right": "#ff7a95",
+    "logo_outline": "#1a0a14",
+    "logo_outline_w": 0.12,
+    "logo_glow": "#c2185b",
+    "logo_size": 0.34,
+    "logo_x": 0.06,
+    "logo_y": 0.03,
+    "end_font": "Kaushan Script",
+    "end_size": 150,
+    "end_fill": "#1f9a4a",
+    "end_outline": "#05140a",
+    "end_outline_w": 0.13,
+    "end_glow": "#9bff9b",
+    "end_tint": "#1f8f4a",
+    "end_blur": 24,
+    "lyrics_color": "#ffffff",
+    "lyrics_glow_a": "#ff4fa3",
+    "lyrics_glow_b": "#35e0e0",
+    "credits_color": "#ffffff",
+    "title_color": "#ffffff",
+    "logo_color": "#fff3c4",
+    "end_color": "#0f6b3a"
+  },
+  "transitions": {
+    "opening_to_video": {
+      "name": "pixelize",
+      "seconds": 0.8
+    },
+    "section_to_section": {
+      "name": "dissolve",
+      "seconds": 0.6
+    },
+    "video_to_end": {
+      "name": "fade",
+      "seconds": 1
+    },
+    "interlude_in": {
+      "name": "pixelize",
+      "seconds": 0.8
+    },
+    "interlude_out": {
+      "name": "fadeblack",
+      "seconds": 0.8
+    },
+    "video_to_interlude": {
+      "name": "fade",
+      "seconds": 0.8
+    },
+    "interlude_to_video": {
+      "name": "fade",
+      "seconds": 0.8
+    }
+  }
+}

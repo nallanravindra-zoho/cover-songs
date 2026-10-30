@@ -1,0 +1,37 @@
+{
+  "opening": {
+    "title_line": "Changure Bangaru raja",
+    "film": "Sri Krishna Paandaveeyam",
+    "lyricist": "Dr. C. Narayana Reddy",
+    "music": "T. V. Raju",
+    "singers": "Jikki",
+    "cover_by": "Soujanya Madabhushi"
+  },
+  "labels": {
+    "telugu": [
+      "సినిమా",
+      "గీత రచయిత",
+      "సంగీతం",
+      "గానం"
+    ],
+    "hindi": [
+      "फ़िल्म",
+      "गीतकार",
+      "संगीत",
+      "गायक"
+    ]
+  },
+  "ending": {
+    "name": "Soujanya Madabhushi",
+    "extra_lines": [
+      "Audio Mastering: Soujanya madabhushi",
+      "Videography: Soujanya madabhushi",
+      "Video Editing: Ravi Nallan"
+    ],
+    "show_song_credits": false
+  },
+  "caption": {
+    "text": "",
+    "hashtags": "#coversong"
+  }
+}

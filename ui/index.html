@@ -1,0 +1,1246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cover Songs · Song settings</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link id="gf1" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap">
+<style id="fontfaces">
+</style>
+<style>
+:root{
+  --g1:#a45cf2; --g2:#22cdb9; --grad:linear-gradient(120deg,var(--g1),var(--g2));
+  --bg:#f8f2ff; --card:#ffffff; --ink:#1f1a33; --mute:#6b6585; --line:#eadcf8; --accent:#a45cf2; --accent2:#22cdb9;
+  --field:#fcf9ff; --good:#0f9d74; --bad:#d6455d; --warn:#b36b00; --shadow:0 1px 2px rgba(120,50,170,.07),0 10px 30px rgba(120,50,170,.10);
+  --page:linear-gradient(170deg,#f6ecff 0%,#f3eefd 45%,#e3f8f4 100%);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --g1:#c08bff; --g2:#35e0cc;
+  --bg:#150d22; --card:#1f1632; --ink:#ece9fa; --mute:#a29cc4; --line:#3a2a5c; --accent:#c08bff; --accent2:#35e0cc;
+  --field:#170f27; --good:#43d19e; --bad:#ff7d92; --warn:#f0b14a; --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.4);
+  --page:linear-gradient(170deg,#1a0f2e 0%,#170f2a 50%,#0d2a2b 100%);}}
+*{box-sizing:border-box}
+html,body{margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--page) fixed,var(--bg);color:var(--ink);font:17px/1.55 Manrope,system-ui,-apple-system,"Segoe UI",sans-serif}
+header{background:linear-gradient(120deg,#9a55e8,#b87af0 48%,#2fcdbb);color:#fff;padding:22px 20px 26px;box-shadow:0 6px 24px rgba(130,60,190,.25)}
+.top{max-width:1240px;margin:0 auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.mark{width:52px;height:52px;border-radius:15px;background:rgba(255,255,255,.2);display:grid;place-items:center;font-size:28px}
+h1{margin:0;font-size:29px;font-weight:800}
+.sub{opacity:.92;font-size:15px}
+.song-pick{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.song-pick select{color:var(--ink);min-width:170px}
+.layout{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:225px 1fr;gap:22px;padding:18px 16px 110px}
+@media(max-width:940px){.layout{grid-template-columns:1fr}.steps{position:static!important;flex-direction:row;overflow:auto}}
+.steps{position:sticky;top:14px;align-self:start;display:flex;flex-direction:column;gap:4px;background:linear-gradient(90deg,var(--g1),var(--g2)) top/100% 4px no-repeat,var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:16px 10px 12px}
+.steps a{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;text-decoration:none;color:var(--mute);font-weight:700;font-size:15.5px;white-space:nowrap}
+.steps a b{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--field);border:1px solid var(--line);font-size:13px}
+.steps a:hover{background:color-mix(in srgb,var(--g1) 8%,var(--card));color:var(--ink)}
+.steps a.on{background:var(--grad);color:#fff;box-shadow:0 4px 14px color-mix(in srgb,var(--g1) 35%,transparent)}
+.steps a.on b{background:rgba(255,255,255,.25);color:#fff;border-color:transparent}
+section.card{background:linear-gradient(90deg,var(--g1),var(--g2)) top/100% 4px no-repeat,var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:22px 24px;margin-bottom:18px;scroll-margin-top:12px}
+section.card h2{margin:0;font-size:21px;font-weight:800;display:flex;gap:10px;align-items:center}
+section.card h2 .n{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--grad);color:#fff;font-size:15px}
+h3{margin:18px 0 8px;font-size:17px}
+.hint{color:var(--mute);font-size:15px;margin:4px 0 14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+.l{display:block;margin-bottom:5px;font-weight:700;font-size:15px}
+input[type=text],input[type=number],select,textarea{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:11px;background:var(--field);color:var(--ink);font:inherit;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+textarea{min-height:90px;resize:vertical;line-height:1.6}
+input[type=color]{width:100%;height:44px;padding:3px;border:1px solid var(--line);border-radius:11px;background:var(--field);cursor:pointer}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.row select,.row input[type=number]{width:auto}
+.row input[type=text]{width:auto;flex:1;min-width:140px}
+button{font:inherit;font-weight:700;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:10px 17px;border-radius:12px;cursor:pointer;white-space:nowrap}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--grad);color:#fff;border-color:transparent}
+button.teal{background:linear-gradient(120deg,var(--g2),#12a595);color:#fff;border-color:transparent}
+button.small{padding:6px 11px;font-size:14px;border-radius:9px}
+button:disabled{opacity:.5;cursor:not-allowed}
+.slider{display:flex;align-items:center;gap:12px}
+.slider input[type=range]{flex:1;accent-color:var(--accent)}
+.slider output{min-width:64px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.info{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--grad);color:#fff;font-size:13px;font-weight:800;cursor:pointer;margin-left:6px;vertical-align:middle;position:relative;user-select:none}
+.pop{position:absolute;z-index:30;left:0;top:30px;width:min(420px,84vw);background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:0 14px 40px rgba(120,50,170,.3);padding:14px;font-weight:500;font-size:15px;line-height:1.5;text-align:left;cursor:default}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:99px;background:var(--field);border:1px solid var(--line);font-size:14px;font-weight:700}
+.chip.good{color:var(--good);border-color:var(--good)} .chip.bad{color:var(--bad);border-color:var(--bad)} .chip.warn{color:var(--warn);border-color:var(--warn)}
+.files{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.drop{border:2px dashed var(--line);border-radius:16px;padding:14px;background:var(--field)}
+.drop.over{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--field))}
+.drop.have{border-style:solid}
+.drop b{display:block;font-size:16.5px}
+.drop .meta{color:var(--mute);font-size:14.5px;margin:2px 0 8px;word-break:break-all}
+.drop audio,.drop video{width:100%;margin-top:8px;border-radius:10px}
+.drop video{max-height:260px;background:#000}
+.bar{height:8px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;width:0;background:var(--grad)}
+.phones{display:flex;gap:18px;flex-wrap:wrap;margin-top:16px}
+.phonewrap{text-align:center;font-weight:700;font-size:14.5px}
+.phone{width:360px;height:640px;position:relative;overflow:hidden;border-radius:16px;background:#111;border:1px solid var(--line);margin:0 auto 6px}
+.phone .inner{width:1080px;height:1920px;position:absolute;left:0;top:0;transform:scale(.3333);transform-origin:0 0;overflow:hidden}
+.phone .bgimg,.phone .bgblur{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.timeline{position:relative;overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--field)}
+.timeline canvas{display:block;cursor:pointer}
+table.t{border-collapse:collapse;width:100%;font-size:15.5px}
+table.t th{text-align:left;color:var(--mute);font-weight:700;padding:6px 6px;border-bottom:1px solid var(--line)}
+table.t td{padding:6px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.t input,table.t select{padding:7px 9px;border-radius:8px}
+table.t input[type=number]{width:100px}
+.scr{font-size:17px;line-height:1.35}
+.scr small{color:var(--mute);display:block;font-size:13px}
+.tapbox{background:#0b0509;color:#fff;border-radius:14px;padding:16px 18px;margin:12px 0}
+.tapbox .nx{font-size:28px;line-height:1.4;margin:6px 0}
+.tapbox.on{outline:3px solid var(--accent)}
+.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-top:12px}
+.ph{border:1px solid var(--line);border-radius:14px;padding:8px;background:var(--field)}
+.ph img{width:100%;aspect-ratio:9/12;object-fit:cover;border-radius:10px;display:block;margin-bottom:6px;background:#000}
+.ph .nm{font-size:13px;color:var(--mute);word-break:break-all;margin-bottom:6px}
+.slots{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.slot{border:2px solid var(--line);border-radius:14px;padding:12px;background:var(--field);cursor:pointer}
+.slot.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 9%,var(--field))}
+.slot b{display:block}
+.slot small{color:var(--mute)}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:12px;margin-top:14px}
+.tcard{border:2px solid var(--line);border-radius:14px;padding:6px;cursor:pointer;background:var(--field);text-align:center}
+.tcard.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 9%,var(--field))}
+.tcard video,.tcard .ph0{width:100%;border-radius:9px;display:block;background:#000;aspect-ratio:9/16;object-fit:cover}
+.tcard .ph0{display:grid;place-items:center;color:#aaa;font-size:13px}
+.tcard b{display:block;font-size:14px;margin-top:4px}
+.log{background:#0b0509;color:#f0dbe6;border-radius:12px;padding:10px 12px;font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap}
+.float{position:fixed;right:18px;bottom:18px;z-index:10;display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 14px;box-shadow:0 10px 30px rgba(120,50,170,.25)}
+.dirty{color:var(--bad);font-weight:700}
+.saved{color:var(--good);font-weight:700}
+.stab{padding:11px 20px;font-size:17px}
+.stab.on{background:var(--grad);color:#fff;border-color:transparent}
+.nowbox{border-radius:16px;padding:22px 14px;text-align:center;background:linear-gradient(135deg,#8c826f,#5f584c);margin-bottom:6px;overflow:hidden}
+.nowlbl{font-weight:700;margin:16px 0 8px}
+.fontbtns{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.fbtn{border:2px solid var(--line);border-radius:14px;padding:10px 12px;background:var(--field);cursor:pointer;text-align:center}
+.fbtn.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--field))}
+.fbtn b{display:block;font-size:26px;line-height:1.35;font-weight:600}
+.fbtn small{color:var(--mute);font-size:13px}
+.pals{display:flex;gap:12px;flex-wrap:wrap}
+.pal{border:3px solid var(--line);border-radius:16px;padding:8px;cursor:pointer;background:var(--field);text-align:center;min-width:104px}
+.pal.on{border-color:var(--accent)}
+.pal i{display:block;height:34px;border-radius:10px;margin-bottom:6px;border:2px solid rgba(0,0,0,.4)}
+.pal small{font-weight:700;font-size:14px}
+.sizebar{display:flex;align-items:center;gap:14px}
+.sizebar button{width:56px;height:56px;font-size:28px;padding:0}
+.sizebar b{font-size:24px;min-width:70px;text-align:center}
+
+section.card h2{cursor:pointer;user-select:none}
+section.card h2 .sum{margin-left:auto;font-weight:600;font-size:14px;color:var(--mute);text-align:right;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+section.card h2 .chev{margin-left:10px;transition:transform .15s;color:var(--mute)}
+section.card.open h2 .chev{transform:rotate(90deg)}
+section.card:not(.open) .body{display:none}
+section.card.open .body{padding-top:6px}
+section.card .tick{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--good);color:#fff;font-size:12px;margin-left:4px}
+details.outcard{border:2px solid var(--line);border-radius:16px;background:var(--field);margin-bottom:12px;padding:0}
+details.outcard>summary{cursor:pointer;padding:14px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;list-style:none;font-weight:800;font-size:18px}
+details.outcard>summary::-webkit-details-marker{display:none}
+details.outcard>summary .sum{margin-left:auto;font-weight:600;font-size:14px;color:var(--mute)}
+details.outcard[open]>summary{border-bottom:1px solid var(--line)}
+details.outcard .obody{padding:14px 16px}
+.pager{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+.pager b{min-width:90px;text-align:center}
+
+.acard{border:2px solid var(--line);border-radius:14px;padding:6px;cursor:pointer;background:var(--field);text-align:center}
+.acard.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 9%,var(--field))}
+.acard .stage{height:84px;border-radius:9px;background:linear-gradient(135deg,#9a917e,#5f584c);position:relative;overflow:hidden}
+.acard b{display:block;font-size:14px;margin-top:5px}
+
+.statuspanel{background:linear-gradient(90deg,var(--g1),var(--g2)) top/100% 4px no-repeat,var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px 22px 14px;margin-bottom:18px}
+.statuspanel h2{margin:0 0 8px;font-size:19px;font-weight:800}
+.chk{display:flex;gap:10px;align-items:flex-start;padding:4px 0;font-size:16px}
+.chk i{font-style:normal;display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;flex:none;font-size:13px;margin-top:2px}
+.chk i.ok{background:var(--good);color:#fff}.chk i.no{background:var(--field);border:2px solid var(--line);color:var(--mute)}.chk i.opt{background:var(--field);border:2px dashed var(--line);color:var(--mute)}
+.chk small{color:var(--mute);display:block}
+.spin{display:inline-block;width:18px;height:18px;border:3px solid var(--line);border-top-color:var(--g1);border-radius:50%;animation:sp 0.9s linear infinite;vertical-align:-3px;margin-right:8px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.runbox{margin-top:10px;padding:12px 14px;border-radius:12px;background:var(--field);border:1px solid var(--line);font-weight:700}
+.ph a{color:var(--accent);text-decoration:none}
+.hidden{display:none!important}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:700px){.two{grid-template-columns:1fr}}
+.cres{display:flex;flex-direction:column;gap:8px}
+.cres .chip{border-radius:12px;font-weight:600;padding:8px 12px}
+</style>
+</head>
+<body>
+<header><div class="top">
+  <div class="mark">🎤</div>
+  <div><h1>Cover Songs</h1><div class="sub">Upload the files, set the timings, pick the look. Everything is saved on this Mac.</div></div>
+  <div class="song-pick">
+    <select id="songSel" aria-label="Song"></select>
+    <button onclick="newSong()">+ New song</button>
+  </div>
+</div></header>
+
+<div class="layout">
+<nav class="steps" id="steps">
+  <a href="#s1" class="on"><b>1</b>Song</a>
+  <a href="#s3"><b>2</b>Lyrics</a>
+  <a href="#s2"><b>3</b>Files</a>
+  <a href="#s4"><b>4</b>Timings &amp; transitions</a>
+  <a href="#s5"><b>5</b>Photos</a>
+  <a href="#s6"><b>6</b>Look &amp; fonts</a>
+  <a href="#s7"><b>7</b>Credits &amp; cards</a>
+  <a href="#s9"><b>8</b>Check &amp; make</a>
+</nav>
+
+<main id="main">
+
+<div class="statuspanel" id="statusPanel">
+  <h2>What is happening <span id="iStatus"></span></h2>
+  <div id="statusDyn"></div>
+  <div class="row" style="margin-top:10px"><label class="switch"><input type="checkbox" data-path="config.auto_place"> Place the lyrics on the voice automatically once the lyrics and the video are both in</label></div>
+</div>
+
+<section class="card" id="s1">
+  <h2><span class="n">1</span>Song <span id="i1"></span></h2>
+  <p class="hint">Name, language and the saved look you want to start from.</p>
+  <div class="grid">
+    <div><label class="l">Title (first line of the song)</label><input type="text" data-path="config.title"></div>
+    <div><label class="l">Language <span id="iLang"></span></label>
+      <select data-path="config.language"><option value="telugu">Telugu</option><option value="hindi">Hindi</option></select></div>
+    <div><label class="l">Saved looks <span id="iPre"></span></label>
+      <div class="row"><select id="presetSel" style="flex:1"></select><button class="small" onclick="applyPreset()">Use</button></div></div>
+    <div><label class="l">Save the current look as</label>
+      <div class="row"><input type="text" id="presetName" placeholder="e.g. house, festival" style="flex:1"><button class="small" onclick="savePreset()">Save look</button></div></div>
+  </div>
+</section>
+
+<section class="card" id="s3">
+  <h2><span class="n">2</span>Lyrics <span id="i3"></span></h2>
+  <p class="hint">Type or paste the lyrics in Telugu or Hindi letters. A line like <b>[pallavi]</b> starts each part. The last part, <b>[order]</b>, says in which order the parts are sung. For humming or an <b>aalap</b> with no words, add a block called <b>[Aalap]</b> (with what you want shown, for example ఓ...ఓ...), and write <b>Aalap</b> in the order where it is sung, e.g. <i>Aalap, pallavi, charanam 1, pallavi, Aalap</i>. The tool finds where it is sung from the voice. A long line gets a screen of its own, split into two lines.</p>
+  <textarea data-path="lyrics" id="lyricsBox" style="min-height:300px;font-size:21px" spellcheck="false"></textarea>
+  <div class="row" style="margin-top:10px"><button class="small" onclick="lyricsTemplate()">Insert an example layout</button><span id="lyrInfo" class="chip"></span></div>
+</section>
+
+<section class="card" id="s2">
+  <h2><span class="n">3</span>Files <span id="i2"></span></h2>
+  <p class="hint">Add the lyrics first (step 2), then the video here. Drop each file on its box, or press Choose. Big files take a minute; the bar shows progress. As soon as the lyrics and the video are both in, the lyrics are placed on the voice automatically (the progress panel at the top shows what is happening).</p>
+  <div class="files" id="files"></div>
+  <h3>How the raw video lines up with the mastered audio <span id="iSync"></span></h3>
+  <div class="grid">
+    <div><label class="l">Method</label>
+      <select data-path="config.sync.method"><option value="auto">Automatic (match the song heard in the raw video)</option><option value="clap">Clap or beep at the start</option><option value="manual">I will type the offset</option></select></div>
+    <div><label class="l">Offset in seconds (only for “I will type it”)</label><input type="number" step="0.01" data-path="config.sync.raw_video_offset"></div>
+  </div>
+</section>
+
+<section class="card" id="s4">
+  <h2><span class="n">4</span>Timings &amp; transitions <span id="i4"></span></h2>
+  <p class="hint">Play the song, see its shape, and set when each lyric screen appears and where each part and interlude starts and ends.</p>
+  <div class="row" style="margin-bottom:10px">
+    <label class="l" style="margin:0">Play</label>
+    <select id="auSrc" onchange="loadAudio()"><option value="master">Mastered audio</option><option value="vocal">Vocal recording</option></select>
+    <label class="l" style="margin:0 0 0 8px">Speed</label>
+    <select id="auRate" onchange="au.playbackRate=+this.value"><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option></select>
+    <label class="l" style="margin:0 0 0 8px">Zoom</label>
+    <select id="tlZoom" onchange="drawTimeline()"><option value="1">1×</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option></select>
+  </div>
+  <audio id="au" controls style="width:100%"></audio>
+  <div class="timeline" id="tlWrap" style="margin-top:10px"><canvas id="tl" height="150"></canvas></div>
+  <div class="hint" id="tlHint" style="margin-top:6px">Click the picture to jump. Green strip: where the voice is. Purple bars: lyric screens (orange if you typed the time). Teal bands: interludes.</div>
+
+  <h3>Tap along to time the lyrics <span id="iTap"></span></h3>
+  <div class="tapbox" id="tapbox">
+    <div id="tapState" style="opacity:.8">Tap mode is off.</div>
+    <div class="nx" id="tapNext">—</div>
+    <div class="row">
+      <button class="primary" onclick="tapStart()">▶ Start tapping</button>
+      <button onclick="tapHit()">TAP (or press Space)</button>
+      <button onclick="tapBack()">⌫ Undo last</button>
+      <button onclick="tapStop()">■ Stop</button>
+      <span style="opacity:.8">Reaction allowance</span>
+      <input type="number" step="0.05" value="-0.15" id="tapOff" style="width:90px"><span style="opacity:.8">s</span>
+    </div>
+  </div>
+  <div class="row" style="margin-top:14px"><button class="teal" onclick="autoPlace()">Auto-place lyrics from the voice</button>
+    <button onclick="useAutoTimes()">Copy automatic times into the table</button><button onclick="clearTimes()">Clear typed times</button><span id="iAuto"></span></div>
+  <div class="hint" id="autoMsg" style="margin:6px 0 10px"></div>
+  <div id="autoWarn"></div>
+  <div id="screens"></div>
+
+  <h3>Interludes and their transitions <span id="iDet"></span></h3>
+  <p class="hint">Found automatically from the gaps in the singing (change the gap length in step 5). The list updates as you change the lyric times, the gap, or the styles. Pick a transition for any interlude, or leave it on automatic.</p>
+  <div id="detected"></div>
+  <h3>Transition styles <span id="i7"></span></h3>
+  <p class="hint">Click a place in the video, then click one style below (one style per place). Each tile plays a short sample using two pictures from her video.</p>
+  <div class="slots" id="slots"></div>
+  <div class="row" id="tcats" style="margin-top:12px"></div>
+  <div class="tgrid" id="tgrid"></div>
+  <div class="pager" id="tpager"></div>
+</section>
+
+<section class="card" id="s5">
+  <h2><span class="n">5</span>Photos <span id="i5"></span></h2>
+  <p class="hint">Every instrumental gap longer than the number below gets a picture. If you add no photos, a plain default picture is used. Add photos, then pick the picture for each interlude here. Which gaps get a picture, and their transitions, are in step 4.</p>
+  <div id="ilist"></div>
+  <div class="row"><input type="file" id="photoIn" accept="image/*" multiple class="hidden" onchange="uploadPhotos(this.files)">
+    <button class="primary" onclick="photoIn.click()">+ Add photos</button><span class="chip" id="photoCount"></span></div>
+  <div class="grid" style="margin-top:12px">
+    <div><label class="l">An instrumental gap becomes an interlude when it is longer than (min:sec) <span id="iMinGap"></span></label><input type="text" inputmode="decimal" data-time="1" data-path="config.interlude_min_seconds" placeholder="0:08" style="width:110px"></div>
+    <div><label class="l">Motion in interludes</label>
+      <select data-path="config.photo_motion"><option value="zoom_in">Slow zoom in</option><option value="zoom_out">Slow zoom out</option><option value="pan">Slow sideways drift</option><option value="none">Still</option></select></div>
+  </div>
+  <div class="photos" id="photos"></div>
+
+  <h3 style="margin-top:24px">Snapshots from your video <span id="iSnap"></span></h3>
+  <p class="hint">Sharp still frames of the video as PNG pictures. Use any of them as an interlude photo, or download them to edit elsewhere. They are also saved in the song's <b>snapshots</b> folder.</p>
+  <div class="row"><button class="teal" id="btnSnap" onclick="makeSnaps()">Take 12 snapshots</button>
+    <span class="hint" style="margin:0">or one at</span><input type="text" id="snapAt" value="" placeholder="m:ss" style="width:90px"><button class="small" onclick="snapAtTime()">Take it</button><span id="snapMsg" class="hint" style="margin:0"></span></div>
+  <div class="photos" id="snaps"></div>
+</section>
+
+<section class="card" id="s6">
+  <h2><span class="n">6</span>Look &amp; fonts <span id="i6"></span></h2>
+  <p class="hint">Starts from the look measured on her Srikaramagu video. The pictures update as you change things. The fonts are the closest free match to hers; if she knows her font's name, send it and we add it.</p>
+  <div class="phones">
+    <div class="phonewrap"><div class="phone" id="pvLyric"></div>Lyrics</div>
+    <div class="phonewrap"><div class="phone" id="pvOpen"></div>Opening card</div>
+    <div class="phonewrap"><div class="phone" id="pvEnd"></div>End card</div>
+  </div>
+  <div class="hint" id="bgNote" style="margin-top:8px"></div>
+
+  <h3 style="margin-top:22px">Change the style <span id="iStyle"></span></h3>
+  <div class="row" id="styleTabs" style="margin-bottom:12px"></div>
+  <div id="styleBox"></div>
+
+  <h3 style="margin-top:28px">Lyric animation <span id="iAnim"></span></h3>
+  <p class="hint">How each lyric screen comes in and goes out. Every tile plays its animation. Pick a style, then set the speed.</p>
+  <div class="row" id="acats"></div>
+  <div class="tgrid" id="agrid"></div>
+  <div class="pager" id="apager"></div>
+  <div class="grid" style="margin-top:14px">
+    <div><label class="l">Way in takes (seconds)</label><div class="slider"><input type="range" min="0.1" max="1.5" step="0.05" data-path="config.text_anim.in_seconds"><output></output></div></div>
+    <div><label class="l">Way out</label><select data-path="config.text_anim.out"><option value="reverse">Play the same animation backwards</option><option value="fade">Fade out</option><option value="cut">Disappear at once</option></select></div>
+    <div><label class="l">Way out takes (seconds)</label><div class="slider"><input type="range" min="0.1" max="1.2" step="0.05" data-path="config.text_anim.out_seconds"><output></output></div></div>
+  </div>
+
+  <details style="margin-top:18px"><summary style="cursor:pointer;font-weight:800;font-size:17px">All detailed options (outline thickness, positions, every colour)</summary>
+  <h3>Lyrics</h3>
+  <div class="grid">
+    <div><label class="l">Font</label><select data-path="config.look.lyrics_font" class="fontSel" data-role="lang"></select></div>
+    <div><label class="l">Weight</label><select data-path="config.look.lyrics_weight"><option value="400">Regular</option><option value="500">Medium</option><option value="600">Semi-bold</option><option value="700">Bold</option></select></div>
+    <div><label class="l">Lines on screen at once</label><select data-path="config.look.lyrics_lines"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+    <div><label class="l">Size</label><div class="slider"><input type="range" min="30" max="110" step="1" data-path="config.look.lyrics_size"><output></output></div></div>
+    <div><label class="l">Distance from the top</label><div class="slider"><input type="range" min="0.05" max="0.8" step="0.01" data-path="config.look.lyrics_top"><output></output></div></div>
+    <div><label class="l">Letters, left end of each line</label><input type="color" data-path="config.look.lyrics_fill_left"></div>
+    <div><label class="l">Letters, middle</label><input type="color" data-path="config.look.lyrics_fill_mid"></div>
+    <div><label class="l">Letters, right end of each line</label><input type="color" data-path="config.look.lyrics_fill_right"></div>
+    <div><label class="l">Outline colour</label><input type="color" data-path="config.look.lyrics_outline"></div>
+    <div><label class="l">Outline thickness</label><div class="slider"><input type="range" min="0.02" max="0.2" step="0.005" data-path="config.look.lyrics_outline_w"><output></output></div></div>
+    <div><label class="l">Glow colour</label><input type="color" data-path="config.look.lyrics_glow"></div>
+  </div>
+
+  <h3>Credits and title on the opening card</h3>
+  <div class="grid">
+    <div><label class="l">Font</label><select data-path="config.look.credits_font" class="fontSel" data-role="lang"></select></div>
+    <div><label class="l">Weight</label><select data-path="config.look.credits_weight"><option value="400">Regular</option><option value="500">Medium</option><option value="600">Semi-bold</option><option value="700">Bold</option></select></div>
+    <div><label class="l">Title size</label><div class="slider"><input type="range" min="50" max="170" step="1" data-path="config.look.title_size"><output></output></div></div>
+    <div><label class="l">Credit lines size</label><div class="slider"><input type="range" min="28" max="90" step="1" data-path="config.look.credits_size"><output></output></div></div>
+    <div><label class="l">Title and credits, left colour</label><input type="color" data-path="config.look.title_fill_left"></div>
+    <div><label class="l">Title and credits, right colour</label><input type="color" data-path="config.look.title_fill_right"></div>
+    <div><label class="l">Outline colour</label><input type="color" data-path="config.look.title_outline"></div>
+    <div><label class="l">Glow colour</label><input type="color" data-path="config.look.title_glow"></div>
+  </div>
+
+  <h3>Her name (logo) <span id="iLogo"></span></h3>
+  <div class="grid">
+    <div><label class="l">Show it as</label><select data-path="config.look.logo_mode"><option value="text">Typed name in her script font</option><option value="image">Her logo picture (step 3)</option></select></div>
+    <div><label class="l">Typed name</label><input type="text" data-path="config.look.logo_text"></div>
+    <div><label class="l">Script font</label><select data-path="config.look.logo_font" class="fontSel" data-role="script"></select></div>
+    <div><label class="l">Size (share of the width)</label><div class="slider"><input type="range" min="0.08" max="0.5" step="0.01" data-path="config.look.logo_size"><output></output></div></div>
+    <div><label class="l">Left position</label><div class="slider"><input type="range" min="0" max="0.7" step="0.01" data-path="config.look.logo_x"><output></output></div></div>
+    <div><label class="l">Top position</label><div class="slider"><input type="range" min="0" max="0.5" step="0.01" data-path="config.look.logo_y"><output></output></div></div>
+    <div><label class="l">Letters, left end</label><input type="color" data-path="config.look.logo_fill_left"></div>
+    <div><label class="l">Letters, middle</label><input type="color" data-path="config.look.logo_fill_mid"></div>
+    <div><label class="l">Letters, right end</label><input type="color" data-path="config.look.logo_fill_right"></div>
+    <div><label class="l">Outline colour</label><input type="color" data-path="config.look.logo_outline"></div>
+    <div><label class="l">Outline thickness</label><div class="slider"><input type="range" min="0.02" max="0.25" step="0.005" data-path="config.look.logo_outline_w"><output></output></div></div>
+    <div><label class="l">Glow colour</label><input type="color" data-path="config.look.logo_glow"></div>
+  </div>
+
+  <h3>End card</h3>
+  <div class="grid">
+    <div><label class="l">Name font</label><select data-path="config.look.end_font" class="fontSel" data-role="script"></select></div>
+    <div><label class="l">Name size</label><div class="slider"><input type="range" min="70" max="240" step="1" data-path="config.look.end_size"><output></output></div></div>
+    <div><label class="l">Letter colour</label><input type="color" data-path="config.look.end_fill"></div>
+    <div><label class="l">Outline colour</label><input type="color" data-path="config.look.end_outline"></div>
+    <div><label class="l">Outline thickness</label><div class="slider"><input type="range" min="0.02" max="0.25" step="0.005" data-path="config.look.end_outline_w"><output></output></div></div>
+    <div><label class="l">Glow colour</label><input type="color" data-path="config.look.end_glow"></div>
+    <div><label class="l">Background tint</label><input type="color" data-path="config.look.end_tint"></div>
+    <div><label class="l">Background blur</label><div class="slider"><input type="range" min="0" max="60" step="1" data-path="config.look.end_blur"><output></output></div></div>
+  </div>
+
+  </details>
+
+  <h3>Add your own font file <span id="iFont"></span></h3>
+  <div class="row"><input type="file" id="fontIn" accept=".ttf,.otf,.woff,.woff2" class="hidden" onchange="uploadFont(this.files[0])">
+    <button onclick="fontIn.click()">+ Upload a font (.ttf, .otf)</button><span class="hint" style="margin:0" id="fontMsg"></span></div>
+</section>
+
+<section class="card" id="s8">
+  <h2><span class="n">7</span>Credits &amp; cards <span id="i8"></span></h2>
+  <p class="hint">What appears on the opening card (the original song) and the end card (her).</p>
+  <div class="two">
+    <div>
+      <h3 style="margin-top:0">Opening card</h3>
+      <label class="l">Title line</label><input type="text" data-path="credits.opening.title_line">
+      <div class="grid" style="margin-top:12px">
+        <div><label class="l" id="lbFilm">Film</label><input type="text" data-path="credits.opening.film"></div>
+        <div><label class="l" id="lbLyr">Lyricist</label><input type="text" data-path="credits.opening.lyricist"></div>
+        <div><label class="l" id="lbMus">Music</label><input type="text" data-path="credits.opening.music"></div>
+        <div><label class="l" id="lbSing">Singers</label><input type="text" data-path="credits.opening.singers"></div>
+        <div><label class="l">Cover by</label><input type="text" data-path="credits.opening.cover_by"></div>
+        <div><label class="switch"><input type="checkbox" data-path="config.opening.enabled"> Show the opening card</label></div>
+        <div><label class="l">Opening card lasts (min:sec)</label><input type="text" inputmode="decimal" data-time="1" data-path="config.opening.seconds" placeholder="0:06"></div>
+        <div><label class="l">Opening card photo</label><select data-path="config.opening.photo" class="photoSel"></select></div>
+      </div>
+      <label class="l" style="margin-top:12px">Words in front of each credit <span id="iLabels"></span></label>
+      <div class="grid" id="labelBox"></div>
+    </div>
+    <div>
+      <h3 style="margin-top:0">End card</h3>
+      <label class="l">Name</label><input type="text" data-path="credits.ending.name">
+      <label class="switch" style="margin-top:12px"><input type="checkbox" data-path="credits.ending.show_song_credits"> Show the original song credits below her name</label>
+      <div class="grid" style="margin-top:12px">
+        <div><label class="switch"><input type="checkbox" data-path="config.ending.enabled"> Show the end card</label></div>
+        <div><label class="l">End card lasts (min:sec)</label><input type="text" inputmode="decimal" data-time="1" data-path="config.ending.seconds" placeholder="0:06"></div>
+        <div><label class="l">End card photo</label><select data-path="config.ending.photo" class="photoSel"></select></div>
+      </div>
+      <label class="l" style="margin-top:12px">Extra lines (one per line)</label>
+      <textarea id="extraLines" style="min-height:70px"></textarea>
+      <h3>Post caption</h3>
+      <label class="l">Caption</label><textarea data-path="credits.caption.text"></textarea>
+      <label class="l" style="margin-top:10px">Hashtags</label><input type="text" data-path="credits.caption.hashtags">
+    </div>
+  </div>
+</section>
+
+<section class="card" id="s9">
+  <h2><span class="n">8</span>Check &amp; make <span id="i9"></span></h2>
+  <p class="hint">Check what you entered, then make a quick preview of part of the song, and when it looks right, the final video.</p>
+  <div class="row"><button class="teal" onclick="runCheck()">Run checks</button></div>
+  <div class="cres" id="checkOut" style="margin:12px 0"></div>
+  <h3>The videos to make <span id="iMake"></span></h3>
+  <p class="hint">Each video has its own settings. Make them one after another, or all together. Everything is built from the lyrics, timings, look and cards set above.</p>
+  <div id="outputs"></div>
+  <div class="row" style="margin:14px 0">
+    <button class="teal" id="btnAllPrev" onclick="startRun('preview',rangeFrom(),rangeTo(),enabledOutputs())">Preview all switched-on videos</button>
+    <button class="primary" id="btnAllFinal" onclick="startRun('final',null,null,enabledOutputs())">Make all switched-on videos (final)</button>
+  </div>
+  <div class="row"><label class="l" style="margin:0">Preview range for the Instagram and YouTube videos: from</label><input type="text" id="pvFrom" value="0:00" style="width:90px"><label class="l" style="margin:0">to</label><input type="text" id="pvTo" value="1:00" style="width:90px"><span>(min:sec; the reel always previews in full)</span></div>
+  <div class="row" style="margin:10px 0"><span id="runPill" class="chip">Idle</span></div>
+  <div class="log" id="runLog" style="min-height:70px;max-height:170px;overflow:auto">Nothing running.</div>
+  <div class="row" id="resultTabs" style="margin-top:14px"></div>
+  <div class="player" style="margin-top:10px"><video id="outVid" controls playsinline style="max-width:100%;max-height:560px;border-radius:14px;background:#000"></video></div>
+  <div class="hint">Your changes are saved automatically when you press a build button.</div>
+  <div class="hint">Built so far: lyrics placed on the voice, her name, interlude pictures with transitions, opening and end cards, three video formats. Not built yet: syncing a separate raw video to the mastered audio.</div>
+</section>
+
+</main>
+</div>
+
+<div class="float"><span id="busy" class="chip warn hidden"></span><span id="saveState" class="saved">Saved</span><button class="primary" onclick="save()">Save</button></div>
+
+<script src="/anim.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const au = $('#au');
+let S = null;               // {name, config, credits, lyrics, photos, files}
+let dirty = false, presets = {}, backdropUrl = null, peaks = null, peaksFor = '', tapIdx = null, tapOn = false;
+
+// ---------- font catalogue (Google Fonts; 'm' = has several weights) ----------
+const FONTS = {
+  telugu: [['Noto Sans Telugu',1],['Hind Guntur',1],['Anek Telugu',1],['Mandali',0],['Ramabhadra',0],['Gurajada',0],['Suranna',0],['NTR',0],['Dhurjati',0],['Ramaraja',0],['Sree Krushnadevaraya',0],['Mallanna',0],['Peddana',0],['Tenali Ramakrishna',0],['Noto Serif Telugu',1],['Tiro Telugu',0],['Ponnala',0],['Timmana',0]],
+  hindi: [['Noto Sans Devanagari',1],['Hind',1],['Mukta',1],['Baloo 2',1],['Poppins',1],['Noto Serif Devanagari',1],['Tiro Devanagari Hindi',0],['Yatra One',0],['Rozha One',0],['Khand',1],['Laila',1],['Kalam',0]],
+  script: [['Kaushan Script',0],['Lobster',0],['Pacifico',0],['Dancing Script',1],['Great Vibes',0],['Satisfy',0],['Sacramento',0],['Yellowtail',0],['Playball',0],['Courgette',0],['Cookie',0],['Allura',0],['Marck Script',0]]
+};
+let uploadedFonts = [];
+const LANG_LOOK={telugu:{lyrics_font:'Noto Sans Telugu',credits_font:'Noto Sans Telugu',lyrics_size:58,credits_size:56,lyrics_top:0.17},hindi:{lyrics_font:'Noto Sans Devanagari',credits_font:'Noto Sans Devanagari',lyrics_size:76,credits_size:70,lyrics_top:0.15}};
+function gfUrl(list){return 'https://fonts.googleapis.com/css2?'+list.map(([n,m])=>'family='+n.replace(/ /g,'+')+(m?':wght@400;500;600;700':'')).join('&')+'&display=swap';}
+function loadGoogleFonts(){
+  const all=[...FONTS.telugu,...FONTS.hindi,...FONTS.script]; const chunks=[all.slice(0,16),all.slice(16,32),all.slice(32)];
+  chunks.forEach((c,i)=>{const l=document.createElement('link');l.rel='stylesheet';l.href=gfUrl(c);document.head.appendChild(l);});
+}
+function fontList(role){
+  const lang = role==='script' ? 'script' : S.config.language;
+  return [...FONTS[lang].map(f=>f[0]), ...uploadedFonts.map(f=>'Uploaded: '+f)];
+}
+function fontCss(name){
+  if(name.startsWith('Uploaded: ')) return `'up_${name.slice(10).replace(/[^\w]/g,'_')}'`;
+  return `'${name}'`;
+}
+async function loadUploadedFonts(){
+  const r = await (await fetch('/api/fonts')).json(); uploadedFonts = r.files;
+  $('#fontfaces').textContent = uploadedFonts.map(f=>`@font-face{font-family:"up_${f.replace(/[^\w]/g,'_')}";src:url("/fonts/${encodeURIComponent(f)}")}`).join('\n');
+}
+function fillFontSelects(){
+  $$('.fontSel').forEach(sel=>{
+    const role=sel.dataset.role, path=sel.dataset.path, cur=get(path);
+    const list=fontList(role);
+    sel.innerHTML=list.map(f=>`<option value="${esc(f)}" style="font-family:${fontCss(f)}">${esc(f)}</option>`).join('');
+    if(!list.includes(cur)){ set(path,list[0]); }
+    sel.value=get(path);
+  });
+}
+
+// ---------- tiny helpers ----------
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function get(path){return path.split('.').reduce((o,k)=>o==null?o:o[k],S);}
+function set(path,v){const ks=path.split('.');const last=ks.pop();const o=ks.reduce((o,k)=>o[k],S);o[last]=v;}
+function mark(){dirty=true;if(typeof refreshSummaries==='function')refreshSummaries();$('#saveState').textContent='Not saved';$('#saveState').className='dirty';}
+function fmt(t){if(t==null||t==='')return '';const r=Math.round(+t*10)/10,m=Math.floor(r/60),sec=r-m*60,whole=Math.floor(sec+1e-9),tenth=Math.round((sec-whole)*10);return m+':'+String(whole).padStart(2,'0')+(tenth?'.'+tenth:'');}
+function parseTime(x){   // "3:12.6", "3:12", "1:03:12" or plain seconds -> seconds; empty -> null; unreadable -> NaN
+  if(x==null)return null;x=String(x).trim().replace(',','.');if(x==='')return null;
+  if(/^\d+(\.\d+)?$/.test(x))return +x;
+  const m=x.match(/^(?:(\d+):)?(\d{1,2}):(\d{1,2}(?:\.\d+)?)$/);if(m)return (+(m[1]||0))*3600+(+m[2])*60+ +m[3];
+  return NaN;}
+function tinp(path,ph,w){return `<input type="text" inputmode="decimal" data-time="1" data-path="${path}" placeholder="${ph==null?'m:ss':fmt(ph)}" style="width:${w||96}px" title="minutes:seconds, for example 3:12.5">`;}
+function info(id,html){const e=document.getElementById(id);if(!e)return;e.innerHTML=`<span class="info" tabindex="0" role="button" aria-label="Help">i<div class="pop hidden">${html}</div></span>`;
+  e.querySelector('.info').onclick=ev=>{ev.stopPropagation();const p=e.querySelector('.pop');const open=!p.classList.contains('hidden');$$('.pop').forEach(x=>x.classList.add('hidden'));if(!open)p.classList.remove('hidden');};}
+document.addEventListener('click',ev=>{if(!ev.target.closest('.pop'))$$('.pop').forEach(x=>x.classList.add('hidden'));});
+async function api(url,opt){const r=await fetch(url,opt);const j=await r.json();if(j.error)throw new Error(j.error);return j;}
+function toast(msg){const s=$('#saveState');s.textContent=msg;s.className='dirty';}
+
+const HELP={
+ i1:'A song is one folder in <b>songs/</b> with the raw files and three settings files. A saved look keeps fonts, colours, sizes and transitions so next week\'s song can start from the same style.',
+ iLang:'Decides which fonts are offered for lyrics and credits, and the words in front of credits (సినిమా / फ़िल्म and so on).',
+ iPre:'<b>house</b> is the look measured from her Srikaramagu video. Choose a look and press Use to copy its fonts, colours and transitions into this song. Save your own under a new name.',
+ i2:'The master audio is the clock for the whole video; her raw video is lined up to it. The vocal recording shows where she sings and where the instrumental gaps are. Her finished export is only for comparing the result side by side.',
+ iSync:'<b>Automatic</b> works when the song was playing out loud when she recorded, so the raw video\'s sound contains it. If she used earphones, use <b>clap</b> (a clap or beep at the start) or type the offset: how many seconds into the raw video the master starts.',
+ i3:'Each screen shows up to the chosen number of lines. A part that comes back, like the pallavi, is typed once and repeated in the <b>[order]</b> line, for example <i>pallavi, charanam 1, pallavi, charanam 2, pallavi</i>.',
+ i4:'The timings are what make the lyrics appear at the right moment. Times are seconds from the start of the mastered audio.',
+ iTap:'Press Start, then press Space (or the TAP button) at the moment each lyric screen should appear. A small reaction allowance (default −0.15 s) moves each tap a little earlier because people tap slightly late. Slow the speed to 0.75× if it is hard. You can fix any single time in the table afterwards. This is exact, but it is you measuring: nothing here listens to the singing.',
+ iSec:'<b>Part with her video</b> = her video plays. <b>Interlude</b> = a photo plays. <b>Opening card / End card</b> = the credit cards. Use "now" to copy the player\'s current time.',
+ iMinGap:'Gaps between lyric lines shorter than this get no photo and no transition: the video just carries on with the lyrics. The default is 8; raise it to get fewer interludes, lower it to get more.',
+ i5:'Pictures for interludes, the opening card and the end card. Where each picture is used is set under its thumbnail.',
+ iStyle:'Pick a tab, then click a font, a colour set and the size. The box at the top shows the current style. The pictures above update at once. "Her style" is the look measured on her Srikaramagu video. Every fine detail is still available under "All detailed options".',
+ i6:'These settings are measured from her Srikaramagu video: two lines of lyrics centred in the top third, white letters with a pink and turquoise glow, her handwritten name small at the top left, and a big green script name on the end card.',
+ iLogo:'Upload her handwritten logo in step 3 to use the real picture. Until then the typed name is shown in a script font.',
+ iFont:'Free fonts are loaded from Google Fonts for these previews (internet needed on this page). If you have a font file you like, upload it and it appears in every font list.',
+ iStatus:'The tool needs two things before it can start: the lyrics and the video. This panel shows which are in, and what the tool is doing right now, with the time it has taken. Switch the automatic start off if you would rather press a button yourself.',
+ iAnim:'The lyric screens animate in and out like in InShot or CapCut: fades, slides, zooms, line by line, word by word, letter by letter, reveals and effects such as glitch and neon flicker. The tiles show each one live. "Play the same animation backwards" uses the chosen style in reverse to go out. A slower way in looks calmer; faster looks punchier. Each video format can use its own animation (step 8).',
+ iSnap:'Frames are picked evenly through the song, skipping the first and last 8 seconds (where the opening and end cards are), and each one is the sharpest of five frames close to its time, so it is not a blurred moment.',
+ iDet:'An interlude is an instrumental gap in the singing longer than the number in step 5. It gets a picture (a default one if you add no photos) and a transition in and out.',
+ i7:'The sample plays with two pictures from her video. "Pixelize" and "hblur" are the closest to the glitch-like effect she uses into the first picture, but that is my reading of the video, not a measurement of an exact effect.',
+ i8:'The opening card (original song credits) covers the first seconds of the video, and the end card (her name) the last seconds, each with its own transition from step 4. While the opening card is on screen, lyrics are hidden behind it. Untick a card to leave it out.',
+ iLabels:'The words printed before each credit. Telugu and Hindi defaults come from her video; change them freely.',
+ iAuto:'The tool finds her voice in the vocal recording, places each lyric line where it is sung, and shows a lyric screen from the first sound of the singing to the last. Grey numbers in the table are those automatic times; type over any of them to correct it. The green strip on the picture is where the voice was measured.',
+ iMake:'Instagram / Facebook is the 9:16 video. YouTube is the side-by-side 16:9 version. The reel is a short 9:16 cut for stories and WhatsApp. A preview is small and fast; a final video is full size and takes a few minutes. Each video keeps its own settings.',
+ i9:'Checks only what you entered and the files; it cannot hear the audio. The video builder itself is the next phase.'
+};
+
+// ---------- loading ----------
+async function init(){
+  initCards();Object.entries(HELP).forEach(([k,v])=>info(k,v));
+  loadGoogleFonts();
+  await loadUploadedFonts();
+  presets = await api('/api/presets'); fillPresets();
+  await loadSongs();
+}
+async function loadSongs(sel){
+  const {songs}=await api('/api/songs');
+  const s=$('#songSel'); s.innerHTML=songs.map(x=>`<option>${esc(x)}</option>`).join('')||'<option value="">(no songs yet)</option>';
+  if(sel) s.value=sel;
+  s.onchange=()=>{ if(dirty&&!confirm('You have unsaved changes. Switch anyway?')){s.value=S.name;return;} loadSong(s.value); };
+  if(s.value) await loadSong(s.value);
+}
+async function loadSong(name){
+  S = await api('/api/song?name='+encodeURIComponent(name));
+  dirty=false; $('#saveState').textContent='Saved'; $('#saveState').className='saved';
+  peaks=null; tapOff();
+  renderAll();
+}
+function tapOff(){tapOn=false;tapIdx=null;}
+function renderAll(){
+  renderOutputs();aSync();renderSnaps();
+  $$('[data-path]').forEach(bind);
+  fillFontSelects(); fillPhotoSelects(); renderFiles(); renderPhotos(); AUTO={}; SCR=[]; refreshScreens(true).then(loadAuto).then(()=>{if(window._songLoaded!==S.name){window._songLoaded=S.name;openInitial();autoKeyDone=autoValid()?autoKey():null;scheduleAuto();}}); renderSections(); syncTransitionView(); renderSlots(); renderLabels();
+  $('#extraLines').value=(S.credits.ending.extra_lines||[]).join('\n');
+  loadAudio(); updateBackdrop(); updatePreviews(); drawTimeline(); renderStyle(); renderAnim();
+}
+function bind(el){
+  const v=get(el.dataset.path);
+  if(el.dataset.time!==undefined){el.value=v==null?'':fmt(v);return;}
+  if(el.type==='checkbox'){el.checked=v!==false&&!!v;return;}
+  if(el.type==='range'||el.type==='number'||el.type==='text'||el.type==='color'||el.tagName==='SELECT'||el.tagName==='TEXTAREA'){
+    el.value = v==null?'':v;
+    if(el.type==='range'){const o=el.parentElement.querySelector('output'); if(o)o.textContent=fmtOut(el.dataset.path,v);}
+  }
+}
+function fmtOut(p,v){return /_outline_w$|\.split$/.test(p)?Math.round(v*100)+' %':/lyrics_top|logo_(size|x|y)$/.test(p)?Math.round(v*100)+' %':v;}
+document.addEventListener('input',ev=>{
+  const el=ev.target; if(el.id==='extraLines'){S.credits.ending.extra_lines=el.value.split('\n').map(x=>x.trim()).filter(Boolean);mark();updatePreviews();return;}
+  if(!el.dataset||!el.dataset.path||el.dataset.time!==undefined)return;
+  let v=el.value;
+  if(el.type==='checkbox')v=el.checked;
+  else if(el.type==='range'){v=+v;const o=el.parentElement.querySelector('output');if(o)o.textContent=fmtOut(el.dataset.path,v);}
+  else if(el.type==='number'){v=v===''?null:+v;}
+  else if(el.tagName==='SELECT'&&/^(config\.look\.lyrics_weight|config\.look\.credits_weight|config\.look\.lyrics_lines|config\.outputs\.[a-z]+\.(width|text_scale))$/.test(el.dataset.path)){v=+v;}
+  if(el.dataset.path==='config.opening.photo'||el.dataset.path==='config.ending.photo'){v=v||null;}
+  set(el.dataset.path,v); mark(); onChange(el.dataset.path);
+});
+document.addEventListener('change',ev=>{const el=ev.target;if(!el.dataset||el.dataset.time===undefined||!el.dataset.path)return;
+  const v=parseTime(el.value);if(Number.isNaN(v)){el.style.outline='2px solid var(--bad)';el.title='Type minutes:seconds, for example 3:12.5';return;}
+  el.style.outline='';set(el.dataset.path,v);mark();onChange(el.dataset.path);el.value=v==null?'':fmt(v);});
+let lyrT=null;
+function onChange(p){
+  if(p==='lyrics'){refreshScreens();return;}
+  if(p==='config.language'){Object.assign(S.config.look,LANG_LOOK[S.config.language]||{});renderAll();}
+  if(p.startsWith('config.look.lyrics_lines')){refreshScreens();}
+  if(p.startsWith('config.sections')){drawTimeline();}
+  if(p.startsWith('config.lyric_times')){drawTimeline();}
+  if(p.startsWith('config.look.')){renderStyle();renderAnim();}
+  if(/^config\.(interlude_min_seconds|interludes|transitions|lyric_)/.test(p)){renderDetected();drawTimeline();}
+  updatePreviews();
+}
+
+// ---------- save, songs, presets ----------
+async function save(){
+  try{await api('/api/save?name='+encodeURIComponent(S.name),{method:'POST',body:JSON.stringify({config:S.config,credits:S.credits,lyrics:S.lyrics})});
+    dirty=false;$('#saveState').textContent='Saved';$('#saveState').className='saved';}catch(e){alert('Could not save: '+e.message);}
+}
+document.addEventListener('keydown',ev=>{if((ev.metaKey||ev.ctrlKey)&&ev.key==='s'){ev.preventDefault();save();}});
+window.addEventListener('beforeunload',ev=>{if(dirty){ev.preventDefault();ev.returnValue='';}});
+async function newSong(){
+  const n=prompt('Name for the new song (letters, numbers, - and _ only), e.g. srikaramagu');if(!n)return;
+  try{await api('/api/new?name='+encodeURIComponent(n),{method:'POST',body:'{}'});await loadSongs(n);}catch(e){alert(e.message);}
+}
+function fillPresets(){const s=$('#presetSel');s.innerHTML=Object.keys(presets).map(k=>`<option>${esc(k)}</option>`).join('');}
+function applyPreset(){const p=presets[$('#presetSel').value];if(!p)return;
+  S.config.look=Object.assign({},S.config.look,p.look);S.config.transitions=JSON.parse(JSON.stringify(p.transitions));mark();renderAll();}
+async function savePreset(){const n=$('#presetName').value.trim();if(!n)return alert('Type a name for the look first.');
+  try{await api('/api/preset?name='+encodeURIComponent(n),{method:'POST',body:JSON.stringify({look:S.config.look,transitions:S.config.transitions})});
+    presets=await api('/api/presets');fillPresets();$('#presetSel').value=n;toast('Look saved as “'+n+'”');setTimeout(()=>{$('#saveState').textContent=dirty?'Not saved':'Saved';$('#saveState').className=dirty?'dirty':'saved';},2500);}catch(e){alert(e.message);}}
+
+// ---------- uploads ----------
+function upload(kind,file,onp){
+  return new Promise((res,rej)=>{
+    const x=new XMLHttpRequest();
+    x.open('POST',`/api/upload?name=${encodeURIComponent(S.name)}&kind=${kind}&file=${encodeURIComponent(file.name)}`);
+    x.upload.onprogress=e=>{if(e.lengthComputable&&onp)onp(e.loaded/e.total);};
+    x.onload=()=>{try{const j=JSON.parse(x.responseText);j.error?rej(new Error(j.error)):res(j);}catch(e){rej(e);}};
+    x.onerror=()=>rej(new Error('upload failed'));
+    x.send(file);
+  });
+}
+const FILEKINDS=[
+  ['master','Mastered audio','audio/*,.wav,.mp3,.m4a','Recommended for a long video: the lyrics are placed using this small file, lined up with the video automatically, and it becomes the sound of the finished video.'],
+  ['vocal','Vocal recording','audio/*,.wav,.mp3,.m4a','Her voice on its own, before mixing.'],
+  ['raw_video','Raw video','video/*,.mp4,.mov','Her one-take video, before editing.'],
+  ['final_export','Her finished video (to compare)','video/*,.mp4,.mov','Optional: last time\'s export, only for comparing.'],
+  ['logo','Her logo picture','image/*','Shared by every song. PNG with a transparent background is best.']
+];
+function renderFiles(){
+  $('#files').innerHTML=FILEKINDS.map(([k,label,acc,desc])=>{
+    const f=S.files[k]; const have=f&&f.exists;
+    const url=k==='logo'?`/brand/${encodeURIComponent(f.file||'')}`:`/media/${S.name}/${encodeURIComponent(f.file||'')}`+'?v='+(f.size||0);
+    let prev='';
+    if(have&&(k==='master'||k==='vocal'))prev=`<audio controls preload="none" src="${url}"></audio>`;
+    if(have&&(k==='raw_video'||k==='final_export'))prev=`<video controls preload="metadata" src="${url}"></video>`;
+    if(have&&k==='logo')prev=`<img src="${url}" style="max-height:90px;max-width:100%;background:#7774;border-radius:10px;padding:6px;margin-top:8px">`;
+    return `<div class="drop ${have?'have':''}" data-kind="${k}">
+      <b>${label}</b><div class="meta">${have?esc(f.file)+' · '+(f.size/1048576).toFixed(1)+' MB'+(f.seconds?' · '+fmt(f.seconds)+' long':''):desc}</div>
+      <div class="row"><input type="file" class="hidden" accept="${acc}" onchange="pickFile('${k}',this.files[0])"><button class="small" onclick="this.previousElementSibling.click()">${have?'Replace':'Choose file'}</button>
+      ${have?`<button class="small" onclick="removeFile('${k}')">Remove</button>`:''}</div>
+      <div class="bar hidden"><i></i></div>${prev}</div>`;
+  }).join('');
+  $$('.drop').forEach(d=>{
+    d.ondragover=e=>{e.preventDefault();d.classList.add('over');};d.ondragleave=()=>d.classList.remove('over');
+    d.ondrop=e=>{e.preventDefault();d.classList.remove('over');if(e.dataTransfer.files[0])pickFile(d.dataset.kind,e.dataTransfer.files[0]);};
+  });
+}
+async function pickFile(kind,file){
+  if(!file)return;pendingUp++;
+  const box=$(`.drop[data-kind="${kind}"]`);const bar=box.querySelector('.bar');bar.classList.remove('hidden');
+  try{const r=await upload(kind,file,p=>bar.firstElementChild.style.width=(p*100)+'%');
+    S.config.files[kind]=r.file; await save(); const s=await api('/api/song?name='+encodeURIComponent(S.name));S.files=s.files;
+    renderFiles(); if(kind==='master'||kind==='vocal'){peaks=null;loadAudio();} updatePreviews(); updateBackdrop(); drawTimeline();
+  }catch(e){alert('Upload failed: '+e.message);bar.classList.add('hidden');}
+  finally{pendingUp--;if(pendingUp<=0&&['raw_video','final_export','master','vocal'].includes(kind)){autoKeyDone=null;}scheduleAuto();}
+}
+async function removeFile(kind){
+  if(!confirm('Remove this file from the song folder?'))return;
+  await api(`/api/delete_file?name=${S.name}&kind=${kind}&file=${encodeURIComponent(S.files[kind].file)}`,{method:'POST',body:'{}'});
+  S.config.files[kind]=null;await save();S.files=(await api('/api/song?name='+S.name)).files;renderFiles();peaks=null;loadAudio();drawTimeline();updatePreviews();
+}
+async function uploadPhotos(list){
+  for(const f of list){try{await upload('photo',f);}catch(e){alert(f.name+': '+e.message);}}
+  S.photos=(await api('/api/song?name='+S.name)).photos; renderPhotos(); fillPhotoSelects(); mark();
+}
+async function uploadFont(f){if(!f)return;
+  try{await upload('font',f);$('#fontMsg').textContent=f.name+' added';await loadUploadedFonts();fillFontSelects();}catch(e){alert(e.message);}}
+
+// ---------- lyrics ----------
+let SCR=[], AUTO={}, scrT=null, scrPage=0;
+function screensOf(){return {screens:SCR};}
+function refreshScreens(now){
+  clearTimeout(scrT);
+  const go=async()=>{try{const r=await api('/api/lyric_screens',{method:'POST',body:JSON.stringify({lyrics:S.lyrics,per:S.config.look.lyrics_lines,name:S.name})});SCR=r.screens;}catch(e){SCR=[];}
+    renderScreens();renderSections();drawTimeline();updatePreviews();if(typeof scheduleAuto==='function')scheduleAuto();};
+  if(now)return go();scrT=setTimeout(go,250);
+}
+function lyricsTemplate(){
+  if(S.lyrics.trim()&&!confirm('Replace the current lyrics with the example layout?'))return;
+  S.lyrics='[Aalap]\nఓ... ఓ...\n\n[pallavi]\nfirst line of the pallavi\nsecond line of the pallavi\n\n[charanam 1]\nfirst line of the charanam\nsecond line of the charanam\n\n[order]\nAalap, pallavi, charanam 1, pallavi, Aalap\n';
+  $('#lyricsBox').value=S.lyrics;mark();refreshScreens(true);
+}
+function autoOf(i){return AUTO.screens&&AUTO.screens.length===SCR.length?AUTO.screens[i]:null;}
+function effTimes(i){const a=autoOf(i),st=S.config.lyric_times[i],en=S.config.lyric_ends[i];return {start:st!=null?st:(a?a.start:null),end:en!=null?en:(a?a.end:null),manual:st!=null||en!=null,low:a&&a.low};}
+function renderScreens(){
+  const screens=SCR,L=S.config;
+  while(L.lyric_times.length<screens.length)L.lyric_times.push(null);
+  while(L.lyric_ends.length<screens.length)L.lyric_ends.push(null);
+  const extra=L.lyric_times.length-screens.length;
+  $('#lyrInfo').textContent=screens.length?`${screens.length} lyric screens`:'No lyric screens yet';
+  const SP=10,spages=Math.max(1,Math.ceil(screens.length/SP));scrPage=Math.min(scrPage,spages-1);
+  const rows=screens.map((s,i)=>({s,i})).slice(scrPage*SP,scrPage*SP+SP).map(({s,i})=>{const a=autoOf(i);
+    return `<tr><td>${i+1}</td><td class="scr"><small>${esc(s.section)}${a&&a.low?' · <b style="color:var(--warn)">unsure</b>':''}</small>${s.lines.map(esc).join('<br>')}</td>
+    <td>${tinp('config.lyric_times.'+i,a?a.start:null)} <button class="small" onclick="setNow('config.lyric_times.${i}')">now</button></td>
+    <td>${tinp('config.lyric_ends.'+i,a?a.end:null)} <button class="small" onclick="setNow('config.lyric_ends.${i}')">now</button></td>
+    <td><button class="small" onclick="playFrom(${effTimes(i).start??0})">▶</button></td></tr>`;}).join('');
+  const pager=spages>1?`<div class="pager"><button class="small" ${scrPage===0?'disabled':''} onclick="scrPage--;renderScreens()">‹ Previous 10</button><b>Screens ${scrPage*SP+1}–${Math.min(screens.length,scrPage*SP+SP)} of ${screens.length}</b><button class="small" ${scrPage>=spages-1?'disabled':''} onclick="scrPage++;renderScreens()">Next 10 ›</button></div>`:'';
+  $('#screens').innerHTML=screens.length?`<table class="t"><tr><th>#</th><th>Lyric screen</th><th>Appears at (min:sec)</th><th>Disappears at (min:sec)</th><th></th></tr>${rows}</table>${pager}`+
+    `<div class="hint" style="margin-top:6px">Grey numbers are the automatic times (from where the voice is). Leave a box empty to keep the automatic time; type a number to override it.</div>`+
+    (extra>0?`<div class="chip warn" style="margin-top:8px">${extra} extra times from older lyrics <button class="small" onclick="trimTimes()">Remove them</button></div>`:''):
+    '<div class="hint">Type the lyrics in step 2 first.</div>';
+  $$('#screens [data-time]').forEach(bind);
+  tapShow();renderDetected();
+}
+function trimTimes(){const n=SCR.length;S.config.lyric_times.length=n;S.config.lyric_ends.length=n;mark();renderScreens();drawTimeline();}
+function setNow(path){set(path,Math.round(au.currentTime*100)/100);mark();renderScreens();renderSections();drawTimeline();}
+function playFrom(t){au.currentTime=Math.max(0,t-1);au.play();}
+function useAutoTimes(){if(!AUTO.screens||AUTO.screens.length!==SCR.length)return alert('Press "Auto-place lyrics" first.');
+  AUTO.screens.forEach((a,i)=>{S.config.lyric_times[i]=a.start;S.config.lyric_ends[i]=a.end;});mark();renderScreens();drawTimeline();}
+function clearTimes(){if(!confirm('Clear all typed times and go back to the automatic ones?'))return;S.config.lyric_times=SCR.map(()=>null);S.config.lyric_ends=SCR.map(()=>null);mark();renderScreens();drawTimeline();}
+function showWarn(){const w=(AUTO.warnings||[]),box=$('#autoWarn');if(!box)return;box.innerHTML=w.length?`<div class="chip warn" style="display:block;border-radius:12px;margin-bottom:10px;font-weight:600"><b>Worth a look (found automatically)</b><br>${w.map(x=>'• '+esc(x)).join('<br>')}</div>`:(AUTO.screens?'<div class="chip good" style="margin-bottom:10px">✓ Checked: no problems found in the placement</div>':'');}
+async function loadAuto(){try{AUTO=await api('/api/auto_times?name='+encodeURIComponent(S.name));}catch(e){AUTO={};}renderScreens();drawTimeline();showWarn();if(!window._opened){window._opened=true;}refreshSummaries();}
+
+// ---------- tap along ----------
+function tapShow(){
+  const {screens}=screensOf();const nx=$('#tapNext');
+  if(!screens.length){nx.textContent='—';return;}
+  if(tapIdx==null)tapIdx=Math.max(0,S.config.lyric_times.findIndex(t=>t==null));
+  if(tapIdx<0)tapIdx=0;
+  nx.innerHTML=tapIdx>=screens.length?'All screens timed ✓':`<small style="opacity:.7;font-size:15px">Screen ${tapIdx+1} of ${screens.length} · ${esc(screens[tapIdx].section)}</small><br>${screens[tapIdx].lines.map(esc).join('<br>')}`;
+  $('#tapbox').classList.toggle('on',tapOn);$('#tapState').textContent=tapOn?'Tap mode is ON: press Space when the next screen should appear.':'Tap mode is off.';
+}
+function tapStart(){
+  const {screens}=screensOf();if(!screens.length)return alert('Type the lyrics first.');
+  if(!au.src)return alert('Upload the mastered audio first.');
+  tapOn=true;if(tapIdx==null||tapIdx>=screens.length)tapIdx=0;
+  const first=S.config.lyric_times.findIndex(t=>t==null);tapIdx=first<0?0:first;
+  if(tapIdx===0)au.currentTime=0;else au.currentTime=Math.max(0,(S.config.lyric_times[tapIdx-1]||0));
+  au.play();tapShow();
+}
+function tapHit(){
+  if(!tapOn)return;const {screens}=screensOf();if(tapIdx>=screens.length)return;
+  const off=parseFloat($('#tapOff').value)||0;
+  S.config.lyric_times[tapIdx]=Math.max(0,Math.round((au.currentTime+off)*100)/100);tapIdx++;mark();renderScreens();drawTimeline();
+}
+function tapBack(){if(tapIdx>0){tapIdx--;S.config.lyric_times[tapIdx]=null;mark();renderScreens();drawTimeline();}}
+function tapStop(){tapOn=false;au.pause();tapShow();}
+document.addEventListener('keydown',ev=>{
+  if(!tapOn)return;
+  if(ev.code==='Space'){ev.preventDefault();ev.stopPropagation();tapHit();}
+  else if(ev.key==='Backspace'&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName)){ev.preventDefault();tapBack();}
+  else if(ev.key==='Escape'){tapStop();}
+},true);
+
+// ---------- sections ----------
+const KIND_LABEL={song:'Part with her video',interlude:'Interlude (photo)',opening:'Opening card',ending:'End card'};
+function addSection(kind){
+  const secs=S.config.sections;const last=secs.length?secs[secs.length-1].end:0;
+  const lyr=[...new Set(SCR.map(x=>x.section))];
+  const n=secs.filter(s=>s.kind===kind).length+1;
+  const name=kind==='song'?(lyr[n-1]||'part '+n):kind==='interlude'?'interlude '+n:KIND_LABEL[kind];
+  secs.push({kind,name,start:last??0,end:null,tin:'',tout:''});mark();renderSections();drawTimeline();fillPhotoSelects();renderPhotos();
+}
+function tOpts(cur){return `<option value="">(automatic)</option>`+TLIST.map(n=>`<option value="${n}" ${cur===n?'selected':''}>${tLabel(n)}</option>`).join('');}
+function renderSections(){return;
+  const secs=S.config.sections;
+  if(!secs.length){$('#sections').innerHTML='<div class="hint">Nothing entered: the builder finds interludes itself, wherever the voice is silent for longer than the limit in step 5. Add an interlude below only to choose its exact time, or to force one.</div>';return;}
+  $('#sections').innerHTML=`<table class="t"><tr><th>Kind</th><th>Name</th><th>Starts (s)</th><th>Ends (s)</th><th>Transition in</th><th>Transition out</th><th></th></tr>`+secs.map((s,i)=>`<tr>
+    <td><select data-path="config.sections.${i}.kind" onchange="kindChanged()">${Object.entries(KIND_LABEL).map(([k,l])=>`<option value="${k}" ${s.kind===k?'selected':''}>${l}</option>`).join('')}</select></td>
+    <td><input type="text" data-path="config.sections.${i}.name" value="${esc(s.name)}"></td>
+    <td><input type="number" step="0.1" min="0" data-path="config.sections.${i}.start" value="${s.start??''}"> <button class="small" onclick="setNow('config.sections.${i}.start')">now</button></td>
+    <td><input type="number" step="0.1" min="0" data-path="config.sections.${i}.end" value="${s.end??''}"> <button class="small" onclick="setNow('config.sections.${i}.end')">now</button></td>
+    <td>${s.kind==='interlude'?`<select data-path="config.sections.${i}.tin">${tOpts(s.tin)}</select>`:''}</td>
+    <td>${s.kind==='interlude'?`<select data-path="config.sections.${i}.tout">${tOpts(s.tout)}</select>`:''}</td>
+    <td><button class="small" onclick="playFrom(${s.start||0})">▶</button> <button class="small" onclick="delSection(${i})">✕</button></td></tr>`).join('')+'</table>';
+}
+function kindChanged(){mark();fillPhotoSelects();renderPhotos();drawTimeline();}
+function delSection(i){S.config.sections.splice(i,1);mark();renderSections();drawTimeline();fillPhotoSelects();renderPhotos();}
+
+// ---------- audio + timeline ----------
+function loadAudio(){
+  const k=$('#auSrc').value;let f=S.files[k];if(!(f&&f.exists)&&S.files.raw_video&&S.files.raw_video.exists)f=S.files.raw_video;   // no audio file yet: use the video's own sound
+  if(f&&f.exists){const src=`/media/${S.name}/${encodeURIComponent(f.file)}?v=${f.size}`;if(au.getAttribute('data-src')!==src){au.setAttribute('data-src',src);au.src=src;au.playbackRate=+$('#auRate').value;peaks=null;loadPeaks(src);}}
+  else{au.removeAttribute('src');au.removeAttribute('data-src');peaks=null;drawTimeline();}
+}
+async function loadPeaks(src){
+  const my=src;
+  try{const buf=await (await fetch(src)).arrayBuffer();const ac=new (window.AudioContext||window.webkitAudioContext)();
+    const dec=await ac.decodeAudioData(buf);if(au.getAttribute('data-src')!==my)return;
+    const ch=dec.getChannelData(0);const N=4000,step=Math.floor(ch.length/N),p=new Float32Array(N);
+    for(let i=0;i<N;i++){let m=0;for(let j=i*step;j<(i+1)*step&&j<ch.length;j+=8){const v=Math.abs(ch[j]);if(v>m)m=v;}p[i]=m;}
+    peaks={p,dur:dec.duration};ac.close();drawTimeline();
+  }catch(e){peaks=null;drawTimeline();}
+}
+function drawTimeline(){
+  const cv=$('#tl'),wrap=$('#tlWrap');if(!cv)return;
+  const z=+$('#tlZoom').value;const W=Math.max(300,wrap.clientWidth)*z,H=150;cv.width=W;cv.height=H;
+  const c=cv.getContext('2d');const cs=getComputedStyle(document.body);c.clearRect(0,0,W,H);
+  const dur=(peaks&&peaks.dur)||au.duration||(S.files.master&&S.files.master.seconds)||(S.files.raw_video&&S.files.raw_video.seconds)||AUTO.seconds||0;
+  if(!dur){c.fillStyle='#888';c.font='16px Manrope,sans-serif';c.fillText('Upload the audio or video (step 3) to see the song here.',14,66);return;}
+  const X=t=>t/dur*W;
+  S.config.sections.forEach(s=>{if(s.start==null)return;const e=s.end==null?s.start+1:s.end;
+    c.fillStyle=s.kind==='interlude'?'rgba(34,205,185,.28)':s.kind==='song'?'rgba(164,92,242,.18)':'rgba(255,170,0,.25)';c.fillRect(X(s.start),0,Math.max(2,X(e)-X(s.start)),H);
+    c.fillStyle=cs.color;c.font='13px Manrope,sans-serif';c.fillText(s.name||'',X(s.start)+4,14);});
+  if(peaks){c.fillStyle=cs.color;c.globalAlpha=.5;const n=peaks.p.length;for(let x=0;x<W;x++){const v=peaks.p[Math.min(n-1,Math.floor(x/W*n))];const h=v*(H-70)/2;c.fillRect(x,H/2-6-h,1,h*2||1);}c.globalAlpha=1;}
+  detectedInterludes().forEach(r=>{c.fillStyle='rgba(34,205,185,.30)';c.fillRect(X(r.start),0,X(r.end)-X(r.start),H);c.fillStyle=cs.color;c.font='12px Manrope,sans-serif';c.fillText('interlude '+(r.i+1),X(r.start)+4,14);});
+  (AUTO.voice||[]).forEach(([a,b])=>{c.fillStyle='rgba(34,205,185,.95)';c.fillRect(X(a),20,Math.max(1,X(b)-X(a)),6);});   // where the voice is (measured)
+  c.fillStyle=cs.color;c.font='11px Manrope,sans-serif';c.globalAlpha=.7;c.fillText('voice',4,36);c.globalAlpha=1;
+  SCR.forEach((_,i)=>{const t=effTimes(i);if(t.start==null)return;const e=t.end==null?t.start+1:t.end;
+    c.fillStyle=t.manual?'rgba(224,160,0,.85)':'rgba(164,92,242,.88)';c.fillRect(X(t.start),H-34,Math.max(2,X(e)-X(t.start)),18);
+    c.fillStyle='#fff';c.font='bold 12px Manrope,sans-serif';if(X(e)-X(t.start)>14)c.fillText(i+1,X(t.start)+3,H-21);});
+  c.fillStyle=cs.color;c.font='11px Manrope,sans-serif';c.globalAlpha=.7;c.fillText('lyrics',4,H-4);c.globalAlpha=1;
+  for(let t=0;t<dur;t+=(z>=4?5:z>=2?10:30)){c.fillStyle=cs.color;c.globalAlpha=.4;c.fillRect(X(t),0,1,6);c.globalAlpha=1;c.font='11px Manrope,sans-serif';c.fillText(fmt(t),X(t)+3,24>H?24:46);}
+  c.fillStyle='#ff2d6f';c.fillRect(X(au.currentTime||0),0,2,H);
+}
+$('#tl').addEventListener('click',ev=>{const r=ev.target.getBoundingClientRect();const dur=(peaks&&peaks.dur)||au.duration||0;if(!dur)return;au.currentTime=(ev.clientX-r.left)/r.width*dur;drawTimeline();});
+au.addEventListener('timeupdate',()=>{drawTimeline();const w=$('#tlWrap'),dur=au.duration||0;if(dur&&!au.paused){const x=au.currentTime/dur*$('#tl').width;if(x>w.scrollLeft+w.clientWidth-40||x<w.scrollLeft)w.scrollLeft=Math.max(0,x-60);}});
+au.addEventListener('loadedmetadata',drawTimeline);
+window.addEventListener('resize',drawTimeline);
+
+// ---------- photos ----------
+function photoOptions(){
+  const inter=S.config.sections.filter(s=>s.kind==='interlude').length||0;const n=Math.max(inter,3);
+  const o=[['none','Not used'],['opening','Opening card'],['ending','End card']];
+  for(let i=1;i<=n;i++)o.push(['interlude:'+i,'Interlude '+i+(i>inter?' (no such interlude yet)':'')]);return o;
+}
+function renderPhotos(){
+  if(typeof renderDetected==='function'&&SCR)renderDetected();
+  $('#photoCount').textContent=S.photos.length+' photo'+(S.photos.length===1?'':'s');
+  $('#photos').innerHTML=S.photos.map(f=>`<div class="ph"><img loading="lazy" src="/media/${S.name}/photos/${encodeURIComponent(f)}"><div class="nm">${esc(f)}</div>
+    <button class="small" onclick="delPhoto('${esc(f).replace(/'/g,"\\'")}')">Remove</button></div>`).join('');
+}
+function photoUse(sel){return;const f=sel.dataset.photo;if(sel.value==='none')delete S.config.photo_use[f];else S.config.photo_use[f]=sel.value;
+  if(sel.value==='opening')S.config.opening.photo=f;if(sel.value==='ending')S.config.ending.photo=f;mark();fillPhotoSelects();updatePreviews();}
+async function delPhoto(f){if(!confirm('Remove '+f+'?'))return;await api(`/api/delete_file?name=${S.name}&kind=photo&file=${encodeURIComponent(f)}`,{method:'POST',body:'{}'});
+  S.photos=S.photos.filter(x=>x!==f);(S.config.interludes||[]).forEach(o=>{if(o&&o.photo===f)delete o.photo;});if(S.config.opening.photo===f)S.config.opening.photo=null;if(S.config.ending.photo===f)S.config.ending.photo=null;mark();renderPhotos();fillPhotoSelects();updatePreviews();}
+function fillPhotoSelects(){
+  $$('.photoSel').forEach(sel=>{sel.innerHTML='<option value="">(use a frame of her video)</option>'+S.photos.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('');sel.value=get(sel.dataset.path)||'';});
+}
+
+// ---------- transitions ----------
+const SLOT_LABEL={opening_to_video:['Opening card → her video','How the opening card gives way to the video'],interlude_in:['Default: going INTO an interlude picture','Used for every interlude unless you pick another one for it in the table above'],interlude_out:['Default: coming OUT of an interlude picture','Used for every interlude unless you pick another one for it in the table above'],video_to_end:['Her video → end card','How the video gives way to the end card']};
+const TREND=['glitchrows','glitchblocks','mosaic','whipleft','whipright','whipup','zoomthrough','zoomout','flash','ripple','diamond','barslide','blindsv','blindsh','checker','pixelize','hblur','zoomin','distance','radial','circleopen','fadewhite','smoothleft','hlslice'];
+const TLIST=[...TREND.filter(n=>!['pixelize','hblur','zoomin','distance','radial','circleopen','fadewhite','smoothleft','hlslice'].includes(n)),'fade','fadeblack','fadewhite','fadegrays','fadefast','fadeslow','dissolve','pixelize','hblur','distance','radial','circleopen','circleclose','circlecrop','rectcrop','vertopen','vertclose','horzopen','horzclose','zoomin','squeezeh','squeezev',
+ 'wipeleft','wiperight','wipeup','wipedown','wipetl','wipetr','wipebl','wipebr','slideleft','slideright','slideup','slidedown','smoothleft','smoothright','smoothup','smoothdown',
+ 'coverleft','coverright','coverup','coverdown','revealleft','revealright','revealup','revealdown','diagtl','diagtr','diagbl','diagbr','hlslice','hrslice','vuslice','vdslice','hlwind','hrwind','vuwind','vdwind'];
+const TCAT={'Trending ★':{test:n=>TREND.includes(n)},Fade:/^fade|dissolve/,'Wipe':/^wipe/,'Slide':/^(slide|smooth)/,'Cover & reveal':/^(cover|reveal)/,'Shapes':/^(circle|rect|vert|horz|radial)/,'Blur, pixel & zoom':/^(pixelize|hblur|distance|zoomin|squeeze)/,'Diagonal':/^diag/,'Slices & wind':/(slice|wind)$/};
+let tCat='All';
+const TLAB={glitchrows:'Glitch rows',glitchblocks:'Glitch blocks',mosaic:'Mosaic',whipleft:'Whip left',whipright:'Whip right',whipup:'Whip up',zoomthrough:'Zoom through',zoomout:'Zoom out',flash:'Flash',ripple:'Ripple',diamond:'Diamond',barslide:'Bar slide',blindsv:'Blinds (vertical)',blindsh:'Blinds (horizontal)',checker:'Checkerboard'};
+function tLabel(n){if(TLAB[n])return TLAB[n];const w={tl:'top-left',tr:'top-right',bl:'bottom-left',br:'bottom-right',h:'horizontal',v:'vertical'};return n.replace(/(wipe|slide|smooth|cover|reveal|diag|circle|vert|horz|squeeze|fade)(.*)/,(m,a,b)=>a+(b?' '+(w[b]||b):'')).replace(/^./,x=>x.toUpperCase());}
+let activeSlot='opening_to_video',tq=Promise.resolve();
+function tNames(v){return [v.name];}
+const TPAGE=10;
+let tPage=0;
+function catOf(n){return Object.keys(TCAT).find(c=>TCAT[c].test(n))||'All';}
+function syncTransitionView(){   // show the group and page that hold the transition chosen for the active place
+  const sel=S.config.transitions[activeSlot].name;tCat=catOf(sel);
+  const list=TLIST.filter(n=>TCAT[tCat].test(n));tPage=Math.max(0,Math.floor(list.indexOf(sel)/TPAGE));
+}
+function renderSlots(){
+  $('#slots').innerHTML=Object.entries(SLOT_LABEL).map(([k,[t,d]])=>{const v=S.config.transitions[k];
+    return `<div class="slot ${k===activeSlot?'on':''}" onclick="pickSlot('${k}')"><b>${t}</b><small>${d}</small><div style="margin-top:6px">${tNames(v).map(n=>`<span class="chip">${tLabel(n)}</span>`).join(' ')} <span class="chip">${v.seconds} s</span></div>
+    <div class="slider" style="margin-top:6px" onclick="event.stopPropagation()"><input type="range" min="0.2" max="2" step="0.1" value="${v.seconds}" oninput="S.config.transitions['${k}'].seconds=+this.value;this.nextElementSibling.textContent=this.value+' s';mark()" onchange="renderSlots()"><output>${v.seconds} s</output></div></div>`;}).join('');
+  const sel=S.config.transitions[activeSlot].name,selCat=catOf(sel);
+  $('#tcats').innerHTML=[...Object.keys(TCAT),'All'].map(c=>`<button class="small ${c===tCat?'primary':''}" onclick="tCat='${c}';tPage=0;renderSlots()">${c}${c===selCat?' ●':''}</button>`).join(' ');
+  const list=TLIST.filter(n=>tCat==='All'||TCAT[tCat].test(n)),pages=Math.max(1,Math.ceil(list.length/TPAGE));
+  tPage=Math.min(tPage,pages-1);
+  $('#tgrid').innerHTML=list.slice(tPage*TPAGE,tPage*TPAGE+TPAGE).map(n=>`<div class="tcard ${n===sel?'on':''}" data-t="${n}" onclick="pickTrans('${n}')"><div class="ph0">${tLabel(n)}</div><b>${tLabel(n)}${n===sel?' ✓':''}</b></div>`).join('');
+  $('#tpager').innerHTML=pages>1?`<button class="small" ${tPage===0?'disabled':''} onclick="tPage--;renderSlots()">‹ Previous 10</button><b>Page ${tPage+1} of ${pages}</b><button class="small" ${tPage>=pages-1?'disabled':''} onclick="tPage++;renderSlots()">Next 10 ›</button><span class="hint" style="margin:0">● marks the group that holds the chosen style (${tLabel(sel)})</span>`:'';
+  lazyTrans();renderDetected();
+}
+function pickSlot(k){activeSlot=k;syncTransitionView();renderSlots();}
+function pickTrans(n){S.config.transitions[activeSlot].name=n;mark();renderSlots();drawTimeline();}
+const tio=new IntersectionObserver(es=>{es.forEach(e=>{if(!e.isIntersecting)return;const card=e.target;tio.unobserve(card);const n=card.dataset.t;
+  tq=tq.then(async()=>{if(!document.body.contains(card))return;try{const j=await api('/api/transition?name='+n);const ph=card.querySelector('.ph0');if(!ph)return;
+    const v=document.createElement('video');v.src=j.url;v.muted=true;v.loop=true;v.autoplay=true;v.playsInline=true;ph.replaceWith(v);}catch(e){}});});},{rootMargin:'200px'});
+function lazyTrans(){$$('#tgrid .tcard').forEach(c=>tio.observe(c));}
+
+// ---------- credits labels ----------
+function renderLabels(){
+  const L=S.credits.labels[S.config.language]||['','','',''];
+  $('#lbFilm').textContent='Film';$('#lbLyr').textContent='Lyricist';$('#lbMus').textContent='Music';$('#lbSing').textContent='Singers';
+  $('#labelBox').innerHTML=L.map((x,i)=>`<div><label class="l">${['Film','Lyricist','Music','Singers'][i]} word</label><input type="text" value="${esc(x)}" oninput="S.credits.labels[S.config.language][${i}]=this.value;mark();updatePreviews()"></div>`).join('');
+}
+
+// ---------- previews ----------
+async function updateBackdrop(){
+  try{const j=await api('/api/backdrop?name='+encodeURIComponent(S.name));backdropUrl=j.url;}catch(e){backdropUrl=null;}
+  const have=S.files.raw_video&&S.files.raw_video.exists;
+  $('#bgNote').textContent=have?'Background: a frame of the raw video you uploaded.':(backdropUrl?'Background: a frame of the template video with its own lyrics blurred out (upload the raw video to see yours).':'No background picture yet.');
+  updatePreviews();
+}
+function sampleLines(){
+  const sc=screensOf().screens;if(sc.length)return sc[0].lines;
+  return S.config.language==='hindi'?['श्री करम अगु परिपालन','जगदीश्वरी']:['శ్రీకరమగు పరిపాలననీవే','జగదీశ్వరీ'];
+}
+function gtext(lines,o){   // each line: dark outline + glow underneath, a pink-to-cyan gradient fill on top (the reference look)
+  const fill=`linear-gradient(90deg,${o.left},${o.mid?o.mid+',':''}${o.right})`;
+  return lines.map(l=>`<div style="display:table;margin:0 auto;position:relative;white-space:nowrap;font-family:${o.font};font-weight:${o.weight};font-size:${o.size}px;line-height:${o.lh||1.35}">`+
+    `<div style="padding:0 ${o.size*.12}px;color:${o.outline};-webkit-text-stroke:${o.ow*o.size}px ${o.outline};text-shadow:0 0 ${o.size*.28}px ${o.glow},0 0 ${o.size*.1}px ${o.glow}">${esc(l)}</div>`+
+    `<div style="padding:0 ${o.size*.12}px;position:absolute;left:0;top:0;color:transparent;background:${fill};-webkit-background-clip:text;background-clip:text">${esc(l)}</div></div>`).join('');
+}
+function logoHtml(L){
+  const useImg=L.logo_mode==='image'&&S.files.logo&&S.files.logo.exists;
+  if(useImg)return `<img src="/brand/${encodeURIComponent(S.files.logo.file)}" style="position:absolute;left:${L.logo_x*100}%;top:${L.logo_y*100}%;width:${L.logo_size*200}%">`;
+  const sz=L.logo_size*1080*0.26,[a,...r]=(L.logo_text||'').split(' '),o={font:fontCss(L.logo_font),weight:400,size:sz,left:L.logo_fill_left,mid:L.logo_fill_mid,right:L.logo_fill_right,outline:L.logo_outline,ow:L.logo_outline_w,glow:L.logo_glow};
+  const left=h=>h.replace('margin:0 auto','margin:0');
+  return `<div style="position:absolute;left:${L.logo_x*100}%;top:${L.logo_y*100}%;transform:rotate(-3deg);transform-origin:0 0">${left(gtext([a],o))}<div style="margin-left:${sz*.9}px">${left(gtext([r.join(' ')],o))}</div></div>`;
+}
+function wrap(t,n){const w=(t||'').split(' '),out=[];let cur='';w.forEach(x=>{if((cur+' '+x).trim().length>n&&cur){out.push(cur);cur=x;}else cur=(cur+' '+x).trim();});if(cur)out.push(cur);return out;}
+function photoUrl(f){return f?`/media/${S.name}/photos/${encodeURIComponent(f)}`:backdropUrl;}
+function updatePreviews(){
+  if(!S||!$('#pvLyric'))return;const L=S.config.look,bg=backdropUrl;
+  const bgImg=u=>u?`<img class="bgimg" src="${u}">`:'';
+  $('#pvLyric').innerHTML=`<div class="inner">${bgImg(bg)}${logoHtml(L)}<div style="position:absolute;left:4%;right:4%;top:${L.lyrics_top*100}%">${gtext(sampleLines().slice(0,L.lyrics_lines),{font:fontCss(L.lyrics_font),weight:L.lyrics_weight,size:L.lyrics_size,left:L.lyrics_fill_left,mid:L.lyrics_fill_mid,right:L.lyrics_fill_right,outline:L.lyrics_outline,ow:L.lyrics_outline_w,glow:L.lyrics_glow})}</div></div>`;
+  const O=S.credits.opening,lab=S.credits.labels[S.config.language]||[],cr=[[lab[0],O.film],[lab[1],O.lyricist],[lab[2],O.music],[lab[3],O.singers]].filter(x=>x[1]);
+  const title=O.title_line||S.config.title||sampleLines().join(' ');
+  const cstyle=`font-family:${fontCss(L.credits_font)};font-weight:${L.credits_weight};`;
+  $('#pvOpen').innerHTML=`<div class="inner">${bgImg(photoUrl(S.config.opening.photo))}
+    <div style="position:absolute;left:5%;right:5%;top:5%">${gtext(wrap(title,12),{font:fontCss(L.credits_font),weight:L.credits_weight,size:L.title_size,left:L.title_fill_left,right:L.title_fill_right,outline:L.title_outline,ow:0.1,glow:L.title_glow})}</div>
+    <div style="position:absolute;left:6%;right:6%;top:37%">${gtext([O.cover_by],{font:fontCss(L.logo_font),weight:400,size:92,left:L.logo_fill_left,mid:L.logo_fill_mid,right:L.logo_fill_right,outline:L.logo_outline,ow:L.logo_outline_w,glow:L.logo_glow})}</div>
+    <div style="position:absolute;left:6%;right:6%;top:47%">${gtext(cr.flatMap(([a,b])=>[a||'',b]).filter(Boolean).length?cr.flatMap(([a,b])=>[a||'',b]).filter(Boolean):['(credits appear here)'],{font:fontCss(L.credits_font),weight:L.credits_weight,size:L.credits_size,left:L.title_fill_left,right:L.title_fill_right,outline:L.title_outline,ow:0.1,glow:L.title_glow})}</div></div>`;
+  const name=(S.credits.ending.name||'').split(' ');
+  const eu=photoUrl(S.config.ending.photo);
+  const eLines=[...(S.credits.ending.show_song_credits===true?cr.flatMap(([a,b])=>[a||'',b]).filter(Boolean):[]),...(S.credits.ending.extra_lines||[]).flatMap(x=>{const i=x.indexOf(':');return i>0&&i<=30&&x.slice(i+1).trim()?[x.slice(0,i).trim()+':',x.slice(i+1).trim()]:[x];})];
+  const csz=Math.min(L.credits_size,0.40*1920/(Math.max(1,eLines.length)*1.7));
+  $('#pvEnd').innerHTML=`<div class="inner">${eu?`<img class="bgimg" src="${eu}" style="filter:blur(${L.end_blur}px);transform:scale(1.15)">`:''}<div style="position:absolute;inset:0;background:${L.end_tint};opacity:.5;mix-blend-mode:multiply"></div>
+    ${eu?`<img src="${eu}" style="position:absolute;left:0;right:0;bottom:0;height:${eLines.length?28:56}%;width:100%;object-fit:cover;object-position:top;-webkit-mask-image:linear-gradient(transparent,#000 22%)">`:''}
+    <div style="position:absolute;left:3%;right:3%;top:4%;transform:rotate(-3deg)">${gtext(name,{font:fontCss(L.end_font),weight:400,size:L.end_size,left:L.end_fill,right:L.end_fill,outline:L.end_outline,ow:L.end_outline_w,glow:L.end_glow})}</div>
+    ${eLines.length?`<div style="position:absolute;left:6%;right:6%;top:${Math.max(24,4+name.length*L.end_size*1.2/19.2+4)}%">${gtext(eLines,{lh:1.7,font:fontCss(L.credits_font),weight:L.credits_weight,size:csz,left:L.title_fill_left,right:L.title_fill_right,outline:L.title_outline,ow:0.1,glow:L.title_glow})}</div>`:''}</div>`;
+}
+
+// ---------- check ----------
+async function runCheck(){
+  if(dirty)await save();
+  const j=await api('/api/check?name='+encodeURIComponent(S.name));
+  $('#checkOut').innerHTML=j.results.map(r=>`<div class="chip ${r.level}">${r.level==='good'?'✓':r.level==='bad'?'✗':'!'} ${esc(r.text)}</div>`).join('');
+}
+
+// step highlight on scroll
+const secs=$$('main section.card');
+const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting)$$('#steps a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id));});},{rootMargin:'-20% 0px -70% 0px'});
+secs.forEach(s=>io.observe(s));
+init();
+
+// ---------- interludes found automatically ----------
+function songSeconds(){return (AUTO&&AUTO.seconds)||(S.files.raw_video&&S.files.raw_video.seconds)||(S.files.master&&S.files.master.seconds)||0;}
+function candidateGaps(){
+  const min=+S.config.interlude_min_seconds||0,dur=songSeconds(),T=S.config.transitions,ov=S.config.interludes||[];
+  const ts=SCR.map((_,i)=>effTimes(i));if(!ts.length||ts.some(t=>t.start==null))return null;
+  const gaps=[];let prev=0;
+  ts.concat([{start:dur,end:dur}]).forEach(t=>{if(t.start-prev>4)gaps.push({gap_from:prev,gap_to:t.start});prev=Math.max(prev,t.end==null?t.start:t.end);});
+  return gaps.map((g,i)=>{const o=ov[i]||{},len=g.gap_to-g.gap_from,auto=len>min,on=o.on!=null?o.on:auto;
+    return {i,...g,len,on,mode:o.on==null?'auto':(o.on?'yes':'no'),auto,start:o.start!=null?o.start:+(g.gap_from+0.6).toFixed(2),end:o.end!=null?o.end:+(g.gap_to-0.6).toFixed(2),
+      tin:o.tin||T.interlude_in.name,tout:o.tout||T.interlude_out.name,ov_in:o.tin||'',ov_out:o.tout||'',photo:o.photo||'',ov_start:o.start,ov_end:o.end};});
+}
+function detectedInterludes(){return (candidateGaps()||[]).filter(g=>g.on);}
+const PH_HUE=[350,200,30];
+function defaultCard(n,w){return `<div style="width:${w||70}px;aspect-ratio:9/16;border-radius:8px;flex:none;background:radial-gradient(circle at 50% 38%,hsl(${PH_HUE[(n-1)%3]},70%,55%),hsl(${PH_HUE[(n-1)%3]},60%,28%) 45%,hsl(${PH_HUE[(n-1)%3]+40},55%,10%))"></div>`;}
+function thumb(g,w){return g.photo?`<img src="/media/${S.name}/photos/${encodeURIComponent(g.photo)}" style="width:${w||70}px;aspect-ratio:9/16;object-fit:cover;border-radius:8px;flex:none">`:defaultCard(g.i+1,w);}
+function setIlT(i,key,el){const v=parseTime(el.value);if(Number.isNaN(v)){el.style.outline='2px solid var(--bad)';return;}el.style.outline='';setIl(i,key,v);}
+function setIl(i,key,v){const a=S.config.interludes=S.config.interludes||[];while(a.length<=i)a.push({});const o=Object.assign({},a[i]);
+  if(v===''||v==null||(typeof v==='number'&&isNaN(v)))delete o[key];else o[key]=v;a[i]=o;mark();renderDetected();drawTimeline();}
+function renderDetected(){
+  const box1=$('#detected'),box2=$('#ilist');if(!box1)return;refreshSummaries();
+  const gs=candidateGaps();
+  if(!SCR.length||gs==null){const m='<div class="hint">Press “Auto-place lyrics from the voice” (above) and every instrumental gap appears here, with its picture and transitions.</div>';box1.innerHTML=m;box2.innerHTML=m;return;}
+  if(!gs.length){const m='<div class="hint">No instrumental gap longer than 4 seconds was found between the lyrics.</div>';box1.innerHTML=m;box2.innerHTML=m;return;}
+  const T=S.config.transitions,min=S.config.interlude_min_seconds;
+  const opt=(cur,def)=>`<option value="">Same as default (${tLabel(def)})</option>`+TLIST.map(n=>`<option value="${n}" ${cur===n?'selected':''}>${tLabel(n)}</option>`).join('');
+  box1.innerHTML=`<div style="overflow-x:auto"><table class="t"><tr><th>#</th><th>Instrumental gap</th><th>Picture here?</th><th>Picture shows from – to (min:sec)</th><th>Transition in</th><th>Transition out</th></tr>`+gs.map(g=>`<tr>
+    <td>${g.i+1}</td><td>${fmt(g.gap_from)} – ${fmt(g.gap_to)}<br><small style="color:var(--mute)">${fmt(g.len)} long</small></td>
+    <td><select onchange="setIl(${g.i},'on',this.value===''?null:this.value==='yes')"><option value="" ${g.mode==='auto'?'selected':''}>Automatic: ${g.auto?'Yes':'No'} (rule: longer than ${fmt(min)})</option><option value="yes" ${g.mode==='yes'?'selected':''}>Yes, always</option><option value="no" ${g.mode==='no'?'selected':''}>No picture</option></select></td>
+    <td style="white-space:nowrap">${g.on?`<input type="text" style="width:92px" value="${g.ov_start==null?'':fmt(g.ov_start)}" placeholder="${fmt(g.start)}" onchange="setIlT(${g.i},'start',this)"> – <input type="text" style="width:92px" value="${g.ov_end==null?'':fmt(g.ov_end)}" placeholder="${fmt(g.end)}" onchange="setIlT(${g.i},'end',this)">`:'<span style="color:var(--mute)">—</span>'}</td>
+    <td>${g.on?`<select onchange="setIl(${g.i},'tin',this.value)">${opt(g.ov_in,T.interlude_in.name)}</select>`:'<span style="color:var(--mute)">—</span>'}</td>
+    <td>${g.on?`<select onchange="setIl(${g.i},'tout',this.value)">${opt(g.ov_out,T.interlude_out.name)}</select>`:'<span style="color:var(--mute)">—</span>'}</td></tr>`).join('')+`</table></div>
+    <div class="hint" style="margin-top:6px">${gs.filter(g=>g.on).length} of ${gs.length} gaps get a picture. Change the rule in step 5, or set any gap to Yes or No here. The default transitions are chosen below.</div>`;
+  box2.innerHTML=gs.filter(g=>g.on).map(g=>`<div class="row" style="padding:10px 0;border-bottom:1px solid var(--line);align-items:center">
+    ${thumb(g)}<div style="flex:1;min-width:220px"><b>Interlude (gap ${g.i+1})</b> · ${fmt(g.start)} to ${fmt(g.end)}<br><span class="hint" style="margin:0">in: ${tLabel(g.tin)} · out: ${tLabel(g.tout)}</span></div>
+    <div><label class="l">Picture</label><select onchange="setIl(${g.i},'photo',this.value)"><option value="">Default picture</option>${S.photos.map(f=>`<option value="${esc(f)}" ${g.photo===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div></div>`).join('')||'<div class="hint">No gap is long enough for a picture with the current rule.</div>';
+}
+
+// ---------- simple style picker ----------
+const PAL={
+ lyrics:[['Her style',['#ff4f8b','#f2dcec','#7fe6e0','#0d0620','#6a3bd9']],['White',['#ffffff','#ffffff','#ffffff','#111111','#555555']],['Gold',['#ffe45e','#fff4bf','#ffb300','#2b1600','#ff9800']],['Green',['#a8ff78','#e8ffd6','#38ef7d','#062b12','#2ecc71']],['Blue',['#7fd4ff','#e6f6ff','#4f8bff','#07122b','#3b6df0']],['Red & gold',['#ff5a5a','#ffe1c4','#ffd166','#2b0606','#ff3b3b']],['Pink',['#ff9ad5','#ffe3f3','#ff5fa2','#2b0620','#ff3d9a']]],
+ opening:[['Her style',['#ff4f8b',null,'#ffb3c1','#0d0620','#6a3bd9']],['White',['#ffffff',null,'#ffffff','#111111','#555555']],['Gold',['#ffe45e',null,'#ffb300','#2b1600','#ff9800']],['Cyan',['#7fe6e0',null,'#e0ffff','#06202b','#2bb3d6']]],
+ name:[['Her style',['#ffe45e','#ffb27a','#ff7a95','#1a0a14','#8a5cf0']],['White',['#ffffff','#ffffff','#ffffff','#111111','#555555']],['Gold',['#ffe45e','#ffd166','#ffb300','#2b1600','#ff9800']],['Cyan',['#7fe6e0','#b9f3ff','#4f8bff','#06202b','#2bb3d6']]],
+ end:[['Green (hers)',['#1f9a4a','#05140a','#ffc46b']],['Pink',['#e91e8c','#2b0620','#ffd1ec']],['Blue',['#2f6fed','#07122b','#bfe0ff']],['Gold',['#e0a100','#2b1600','#fff1b0']],['White',['#ffffff','#1a1a1a','#ffd166']]]
+};
+const PKEYS={lyrics:['lyrics_fill_left','lyrics_fill_mid','lyrics_fill_right','lyrics_outline','lyrics_glow'],opening:['title_fill_left',null,'title_fill_right','title_outline','title_glow'],name:['logo_fill_left','logo_fill_mid','logo_fill_right','logo_outline','logo_glow'],end:['end_fill','end_outline','end_glow']};
+const STAB={
+ lyrics:{label:'Lyrics',font:'lyrics_font',role:'lang',size:['lyrics_size'],step:4,min:30,max:130,fmt:v=>v},
+ opening:{label:'Opening card',font:'credits_font',role:'lang',size:['title_size','credits_size'],step:6,min:40,max:170,fmt:v=>v},
+ name:{label:'Her name',font:'logo_font',role:'script',size:['logo_size'],step:0.02,min:0.08,max:0.5,fmt:v=>Math.round(v*100)},
+ end:{label:'End card',font:'end_font',role:'script',size:['end_size'],step:10,min:70,max:240,fmt:v=>v}
+};
+let styleTab='lyrics',moreFonts=false;
+function sampleFor(tab){
+  const L=S.config.look,hi=S.config.language==='hindi';
+  const w=hi?['बचपन की','मोहब्बत']:['శ్రీకరమగు','పరిపాలన'];
+  if(tab==='lyrics')return gtext([w.join(' ')],{font:fontCss(L.lyrics_font),weight:L.lyrics_weight,size:Math.min(L.lyrics_size,80)*1.2,left:L.lyrics_fill_left,mid:L.lyrics_fill_mid,right:L.lyrics_fill_right,outline:L.lyrics_outline,ow:L.lyrics_outline_w,glow:L.lyrics_glow});
+  if(tab==='opening')return gtext([w[0]],{font:fontCss(L.credits_font),weight:L.credits_weight,size:Math.min(L.title_size,100),left:L.title_fill_left,right:L.title_fill_right,outline:L.title_outline,ow:0.1,glow:L.title_glow});
+  if(tab==='name')return gtext(['Soujanya'],{font:fontCss(L.logo_font),weight:400,size:Math.min(L.logo_size*1080*0.26,60)*1.5,left:L.logo_fill_left,mid:L.logo_fill_mid,right:L.logo_fill_right,outline:L.logo_outline,ow:L.logo_outline_w,glow:L.logo_glow});
+  return gtext(['Soujanya'],{font:fontCss(L.end_font),weight:400,size:Math.min(L.end_size,120),left:L.end_fill,right:L.end_fill,outline:L.end_outline,ow:L.end_outline_w,glow:L.end_glow});
+}
+function renderStyle(){
+  if(!S||!$('#styleBox'))return;
+  const L=S.config.look,T=STAB[styleTab],cur=L[T.font];
+  $('#styleTabs').innerHTML=Object.entries(STAB).map(([k,t])=>`<button class="stab ${k===styleTab?'on':''}" onclick="styleTab='${k}';renderStyle()">${t.label}</button>`).join('');
+  const all=fontList(T.role),shown=moreFonts?all:all.slice(0,8);
+  const smp=S.config.language==='hindi'?'बचपन की':'శ్రీకరమగు';
+  const fsample=T.role==='script'?'Soujanya':smp;
+  const keys=PKEYS[styleTab];
+  const pals=PAL[styleTab].map(([n,v])=>{const on=keys.every((k,i)=>k==null||String(L[k]).toLowerCase()===String(v[i]).toLowerCase());
+    const sw=styleTab==='end'?`background:${v[0]}`:`background:linear-gradient(90deg,${v[0]},${v[1]||v[2]},${v[2]})`;
+    return `<div class="pal ${on?'on':''}" onclick="pickPal('${n.replace(/'/g,"\\'")}')"><i style="${sw}"></i><small>${n}</small></div>`;}).join('');
+  const sz=L[T.size[0]];
+  $('#styleBox').innerHTML=`<div class="nowlbl" style="margin-top:0">Now</div><div class="nowbox">${sampleFor(styleTab)}</div>
+   <div class="nowlbl">1 · Font <span class="hint" style="font-weight:500">(now: ${esc(cur)})</span></div>
+   <div class="fontbtns">${shown.map(f=>`<div class="fbtn ${f===cur?'on':''}" onclick="pickFont('${f.replace(/'/g,"\\'")}')"><b style="font-family:${fontCss(f)}">${fsample}</b><small>${esc(f)}</small></div>`).join('')}</div>
+   ${all.length>8?`<div style="margin-top:8px"><button class="small" onclick="moreFonts=!moreFonts;renderStyle()">${moreFonts?'Show fewer fonts':'Show all '+all.length+' fonts'}</button></div>`:''}
+   <div class="nowlbl">2 · Colours</div><div class="pals">${pals}</div>
+   <div class="nowlbl">3 · Size</div><div class="sizebar"><button onclick="sizeStep(-1)" aria-label="Smaller">−</button><b>${T.fmt(sz)}</b><button onclick="sizeStep(1)" aria-label="Bigger">+</button><span class="hint" style="margin:0">Smaller / bigger</span></div>`;
+}
+function styleChanged(){mark();$$('[data-path]').forEach(bind);renderStyle();updatePreviews();}
+function pickFont(f){S.config.look[STAB[styleTab].font]=f;styleChanged();}
+function pickPal(n){const v=PAL[styleTab].find(x=>x[0]===n)[1];PKEYS[styleTab].forEach((k,i)=>{if(k&&v[i]!=null)S.config.look[k]=v[i];});styleChanged();}
+function sizeStep(d){const T=STAB[styleTab],L=S.config.look;const f=T.size.length>1?(L[T.size[0]]+d*T.step)/L[T.size[0]]:1;
+  T.size.forEach(k=>{let v=T.size.length>1?Math.round(L[k]*f):+(L[k]+d*T.step).toFixed(2);L[k]=Math.max(T.min*(k==='credits_size'?0.6:1),Math.min(T.max,v));});styleChanged();}
+
+// ---------- collapsible steps ----------
+const STEPS=['s1','s3','s2','s4','s5','s6','s8','s9'];
+let doneBefore=null;
+function stepDone(id){
+  if(!S)return false;const f=S.files,C=S.config,A=AUTO.screens&&AUTO.screens.length===SCR.length&&SCR.length>0;
+  return {s1:!!(C.title||'').trim(),s2:!!((f.raw_video&&f.raw_video.exists)||(f.master&&f.master.exists)),s3:!!(S.lyrics||'').trim(),s4:A,s5:S.photos.length>0,s6:true,
+          s8:!!(S.credits.opening.title_line||S.credits.opening.film||S.credits.opening.singers),s9:false}[id];
+}
+function stepSummary(id){
+  if(!S)return '';const f=S.files,C=S.config;
+  const nf=['master','vocal','raw_video','final_export','logo'].filter(k=>f[k]&&f[k].exists).length;
+  const gs=(candidateGaps&&SCR.length)?candidateGaps():null;
+  return {s1:(C.title||'(no title yet)')+' · '+(C.language==='hindi'?'Hindi':'Telugu'),s2:nf+' of 5 files',s3:SCR.length?SCR.length+' lyric screens':'no lyrics yet',
+   s4:gs?`${gs.length} gaps · ${gs.filter(g=>g.on).length} with a picture`:(SCR.length?'not placed yet':'—'),s5:S.photos.length+' photo'+(S.photos.length===1?'':'s'),
+   s6:C.look.lyrics_font+' · size '+C.look.lyrics_size+' · animation: '+((window.Anim&&Anim.FX[C.text_anim.in])?Anim.FX[C.text_anim.in].label:'Fade'),s8:S.credits.opening.title_line||S.credits.opening.film||'not filled yet',
+   s9:OUT_NAMES.filter(n=>C.outputs[n].enabled).length+' of 3 videos switched on'}[id]||'';
+}
+function refreshSummaries(){
+  if(!S)return;if(typeof renderStatus==='function')renderStatus();
+  STEPS.forEach(id=>{const sec=document.getElementById(id);if(!sec)return;const sm=sec.querySelector('h2 .sum');if(sm)sm.textContent=stepSummary(id);});
+  OUT_NAMES.forEach(n=>{const e=$('#osum_'+n);if(e){const o=S.config.outputs[n];e.textContent=(o.enabled?'switched on':'switched off')+' · '+(o.layout==='side'?(o.width+' × '+Math.round(o.width*9/16)):(o.width+' × '+Math.round(o.width*16/9)))+(n==='reel'?' · '+fmt(o.length):'');}});
+  const done={};STEPS.forEach(id=>done[id]=stepDone(id));
+  if(doneBefore){const newly=STEPS.filter(id=>done[id]&&!doneBefore[id]);if(newly.length)openNextIncomplete(done);}
+  doneBefore=done;
+}
+function openCard(sec,on){sec.classList.toggle('open',on);if(on&&sec.id==='s4')setTimeout(drawTimeline,50);if(on&&sec.id==='s7x')return;}
+function openNextIncomplete(done){const id=STEPS.find(x=>x!=='s9'&&!done[x]);if(id)openCard(document.getElementById(id),true);}
+function initCards(){
+  $$('main section.card').forEach(sec=>{
+    const h=sec.querySelector('h2');const body=document.createElement('div');body.className='body';
+    while(h.nextSibling)body.appendChild(h.nextSibling);sec.appendChild(body);
+    h.insertAdjacentHTML('beforeend','<span class="sum"></span><span class="chev">▸</span>');
+    h.onclick=ev=>{if(ev.target.closest('.info,.pop'))return;openCard(sec,!sec.classList.contains('open'));};
+  });
+  $$('#steps a').forEach(a=>a.addEventListener('click',()=>{const sec=document.querySelector(a.getAttribute('href'));if(sec){openCard(sec,true);setTimeout(()=>sec.scrollIntoView({behavior:'smooth',block:'start'}),60);}}));
+}
+function openInitial(){   // all steps start closed; open the first one that still needs filling (or the last step when everything is filled)
+  $$('main section.card').forEach(sec=>sec.classList.remove('open'));
+  doneBefore=null;refreshSummaries();
+  const done={};STEPS.forEach(id=>done[id]=stepDone(id));
+  const id=STEPS.find(x=>x!=='s9'&&!done[x])||'s9';openCard(document.getElementById(id),true);
+  doneBefore=done;
+}
+
+// ---------- lyric animation picker ----------
+let aGroup='Fade & scale',aPage=0,animTiles=[],animRaf=0;
+function aSel(){return S.config.text_anim.in;}
+function aSync(){const f=Anim.FX[aSel()];aGroup=f?f.group:'Fade & scale';const list=Anim.EFFECTS.filter(x=>x.group===aGroup);aPage=Math.max(0,Math.floor(list.findIndex(x=>x.id===aSel())/10));}
+function renderAnim(){
+  if(!S||!$('#agrid')||!window.Anim)return;
+  const sel=aSel(),selGroup=(Anim.FX[sel]||{}).group;
+  $('#acats').innerHTML=Anim.groups.map(g=>`<button class="small ${g===aGroup?'primary':''}" onclick="aGroup='${g.replace(/'/g,"\\'")}';aPage=0;renderAnim()">${g}${g===selGroup?' ●':''}</button>`).join(' ');
+  const list=Anim.EFFECTS.filter(x=>x.group===aGroup),pages=Math.max(1,Math.ceil(list.length/10));aPage=Math.min(aPage,pages-1);
+  $('#agrid').innerHTML=list.slice(aPage*10,aPage*10+10).map(f=>`<div class="acard ${f.id===sel?'on':''}" data-a="${f.id}" onclick="pickAnim('${f.id}')"><div class="stage"></div><b>${f.label}${f.id===sel?' ✓':''}</b></div>`).join('');
+  $('#apager').innerHTML=pages>1?`<button class="small" ${aPage===0?'disabled':''} onclick="aPage--;renderAnim()">‹ Previous 10</button><b>Page ${aPage+1} of ${pages}</b><button class="small" ${aPage>=pages-1?'disabled':''} onclick="aPage++;renderAnim()">Next 10 ›</button><span class="hint" style="margin:0">● marks the group that holds the chosen animation (${(Anim.FX[sel]||{label:'Fade'}).label})</span>`:'';
+  const L=S.config.look,hi=S.config.language==='hindi',txt=hi?'बचपन की':'శ్రీకరమగు';
+  animTiles=[...$$('#agrid .stage')].map(st=>{const id=st.parentElement.dataset.a,fx=Anim.FX[id];
+    st.innerHTML='<div class="blk" style="position:absolute;left:3%;right:3%;top:20px">'+Anim.html([txt],{font:fontCss(L.lyrics_font),weight:L.lyrics_weight,size:26,left:L.lyrics_fill_left,mid:L.lyrics_fill_mid,right:L.lyrics_fill_right,outline:L.lyrics_outline,ow:L.lyrics_outline_w,glow:L.lyrics_glow,lh:1.35},fx.unit)+'</div>';
+    Anim.prepare(st);return {st,id};});
+  startAnimLoop();
+}
+function startAnimLoop(){
+  cancelAnimationFrame(animRaf);const t0=performance.now();
+  const loop=now=>{
+    animTiles=animTiles.filter(t=>document.body.contains(t.st));
+    if(animTiles.length){const t=((now-t0)/1000)%3.1;
+      let p=t<.9?t/.9:t<1.9?1:t<2.4?1-(t-1.9)/.5:0;
+      if(animTiles[0].st.offsetParent)animTiles.forEach(a=>{if(!a.ok||a.w!==a.st.firstChild.offsetWidth){Anim.prepare(a.st);a.ok=true;a.w=a.st.firstChild.offsetWidth;}Anim.apply(a.st,a.id,p,{W:300,H:120});});}
+    animRaf=requestAnimationFrame(loop);};
+  animRaf=requestAnimationFrame(loop);
+}
+function pickAnim(id){S.config.text_anim.in=id;mark();renderAnim();}
+
+// ---------- automatic placement ----------
+let autoKeyDone=null,autoT=null,pendingUp=0;
+function autoKey(){
+  if(!S)return null;const f=S.files;
+  const video=(f.raw_video&&f.raw_video.exists)||(f.final_export&&f.final_export.exists);
+  if(!video||!(S.lyrics||'').trim()||!SCR.length)return null;
+  const sig=['raw_video','final_export','master','vocal'].map(k=>f[k]&&f[k].exists?f[k].file+':'+f[k].size:'-').join('|');
+  return (S.lyrics||'').trim()+'||'+sig+'||'+S.config.look.lyrics_lines;
+}
+function autoValid(){return !!(AUTO.screens&&AUTO.screens.length===SCR.length&&SCR.length);}
+function scheduleAuto(){clearTimeout(autoT);autoT=setTimeout(maybeAutoPlace,2500);}
+async function maybeAutoPlace(){
+  if(!S||S.config.auto_place===false)return;
+  if(pendingUp>0){scheduleAuto();return;}
+  const key=autoKey();if(!key)return;
+  if(key===autoKeyDone&&autoValid())return;            // nothing changed since the last placement
+  if(key===autoKeyDone)return;                          // already tried for exactly this input (a failure is not retried in a loop)
+  let st;try{st=await api('/api/status');}catch(e){return;}
+  if(st.running){scheduleAuto();return;}                // wait for the other build to finish
+  autoKeyDone=key;
+  $('#autoMsg').textContent='Everything needed is here, so the lyrics are being placed on the voice now. This takes a few minutes the first time.';
+  await startRun('align',null,null,null,true);
+}
+
+// ---------- progress panel ----------
+let RUNSTATE={running:false,mode:null,step:'',started:0,code:null},statusT=null;
+function hasVideo(){const f=S&&S.files;return !!(f&&((f.raw_video&&f.raw_video.exists)||(f.final_export&&f.final_export.exists)));}
+function renderStatus(){
+  if(!S||!$('#statusDyn'))return;
+  const f=S.files,hasL=SCR.length>0,hasV=hasVideo(),hasVoc=!!(f.vocal&&f.vocal.exists);
+  const row=(cls,mark,t,sub)=>`<div class="chk"><i class="${cls}">${mark}</i><div>${t}${sub?`<small>${sub}</small>`:''}</div></div>`;
+  let h=row(hasL?'ok':'no',hasL?'✓':'',`<b>Lyrics</b> ${hasL?'· '+SCR.length+' lyric screens':''}`,hasL?'':'Not added yet: type or paste them in step 2.');
+  h+=row(hasV?'ok':'no',hasV?'✓':'',`<b>Video</b> ${hasV?'· '+esc((f.raw_video&&f.raw_video.exists?f.raw_video:f.final_export).file):''}`,hasV?'':'Not added yet: upload the raw video (or her finished export) in step 3.');
+  const hasM=!!(f.master&&f.master.exists);
+  h+=row(hasM?'ok':'opt',hasM?'✓':'·',`<b>Mastered audio</b> ${hasM?'· uploaded: used to find her voice, and as the finished video\'s sound':'· optional'}`,hasM?'':'Recommended for a long video. Without it, her voice is taken from the video\'s own sound.');
+  h+=row(hasVoc?'ok':'opt',hasVoc?'✓':'·',`<b>Her voice recording</b> ${hasVoc?'· uploaded: used first':'· optional'}`,hasVoc?'':'If you skip it, her voice is separated from the mastered audio (or the video) automatically, about 1.5 minutes.');
+  let state;
+  if(RUNSTATE.running&&RUNSTATE.mode==='align'){const sec=Math.max(0,Math.round((Date.now()-RUNSTATE.started)/1000));
+    state=`<div class="runbox"><span class="spin"></span>Placing the lyrics on the voice · ${fmt(sec)} so far<br><span style="font-weight:500;color:var(--mute)">${esc(RUNSTATE.step||'starting…')}</span><br><span style="font-weight:500;color:var(--mute);font-size:14px">A full song usually takes 2 to 4 minutes the first time. You can keep working meanwhile.</span></div>`;}
+  else if(RUNSTATE.running){state=`<div class="runbox"><span class="spin"></span>Building the video · ${esc(RUNSTATE.step||'starting…')}</div>`;}
+  else if(hasL&&hasV&&autoValid()){const gs=candidateGaps()||[];state=`<div class="runbox" style="color:var(--good)">✓ Lyrics placed on the voice: ${SCR.length} screens, ${gs.length} instrumental gaps (${gs.filter(g=>g.on).length} with a picture). Check the table in step 4.</div>`;}
+  else if(hasL&&hasV){state=S.config.auto_place===false?`<div class="runbox">Ready. Automatic placement is off. <button class="small teal" onclick="autoPlace()">Place the lyrics now</button></div>`:`<div class="runbox"><span class="spin"></span>Both are in: starting the placement in a moment…</div>`;}
+  else{const miss=[!hasL?'the lyrics (step 2)':null,!hasV?'the video (step 3)':null].filter(Boolean).join(' and ');state=`<div class="runbox" style="color:var(--warn)">Waiting for ${miss}. Nothing is processed until both are in.</div>`;}
+  $('#statusDyn').innerHTML=h+state;
+  clearInterval(statusT);if(RUNSTATE.running)statusT=setInterval(renderStatus,1000);
+}
+
+// ---------- snapshots ----------
+async function renderSnaps(){
+  if(!S||!$('#snaps'))return;
+  let files=[];try{files=(await api('/api/snapshots?name='+encodeURIComponent(S.name))).files;}catch(e){}
+  $('#snaps').innerHTML=files.map(f=>{const used=S.photos.includes(f);return `<div class="ph"><a href="/media/${S.name}/snapshots/${encodeURIComponent(f)}" target="_blank"><img loading="lazy" src="/media/${S.name}/snapshots/${encodeURIComponent(f)}"></a>
+    <div class="nm">${esc(f.replace(/^snap_(\d+)m(\d+)s.*/,'at $1:$2'))}</div>
+    <div class="row"><button class="small ${used?'':'primary'}" ${used?'disabled':''} onclick="useSnap('${esc(f)}')">${used?'Added ✓':'Use as a photo'}</button>
+    <a class="small" href="/media/${S.name}/snapshots/${encodeURIComponent(f)}" download="${esc(f)}" style="font-weight:700">Download</a></div></div>`;}).join('')||'<div class="hint">No snapshots yet.</div>';
+}
+async function makeSnaps(){
+  if(!hasVideo())return alert('Upload the video first (step 3).');
+  $('#btnSnap').disabled=true;$('#snapMsg').innerHTML='<span class="spin"></span>Taking snapshots (about 10 seconds)…';
+  try{await api('/api/snapshots?name='+encodeURIComponent(S.name),{method:'POST',body:JSON.stringify({count:12})});$('#snapMsg').textContent='Done: 12 snapshots.';}catch(e){$('#snapMsg').textContent='Could not take snapshots: '+e.message;}
+  $('#btnSnap').disabled=false;renderSnaps();
+}
+async function snapAtTime(){
+  const t=parseTime($('#snapAt').value);if(t==null||Number.isNaN(t))return alert('Type a time like 1:23 or 1:23.5');
+  if(!hasVideo())return alert('Upload the video first (step 3).');
+  try{await api('/api/snapshots?name='+encodeURIComponent(S.name),{method:'POST',body:JSON.stringify({at:[t]})});$('#snapMsg').textContent='Snapshot at '+fmt(t)+' added.';}catch(e){$('#snapMsg').textContent='Could not take it: '+e.message;}
+  renderSnaps();
+}
+async function useSnap(f){
+  try{await api(`/api/use_snapshot?name=${encodeURIComponent(S.name)}&file=${encodeURIComponent(f)}`,{method:'POST',body:'{}'});S.photos=(await api('/api/song?name='+encodeURIComponent(S.name))).photos;renderPhotos();fillPhotoSelects();renderSnaps();}catch(e){alert(e.message);}
+}
+
+// ---------- build ----------
+let pollT=null;
+const OUT_NAMES=['instagram','youtube','reel'];
+function rangeFrom(){const v=parseTime($('#pvFrom').value);return Number.isNaN(v)||v==null?0:v;}
+function rangeTo(){const v=parseTime($('#pvTo').value);return Number.isNaN(v)||v==null?60:v;}
+function enabledOutputs(){return OUT_NAMES.filter(n=>S.config.outputs[n].enabled);}
+function renderOutputs(){
+  if(!S||!$('#outputs'))return;const O=S.config.outputs;
+  const sw=(path,label)=>`<label class="switch"><input type="checkbox" data-path="${path}"> ${label}</label>`;
+  const num=(path,label,extra)=>`<div><label class="l">${label}</label><input type="number" data-path="${path}" ${extra||''}></div>`;
+  const sel=(path,label,opts)=>`<div><label class="l">${label}</label><select data-path="${path}">${opts.map(([v,t])=>`<option value="${v}">${t}</option>`).join('')}</select></div>`;
+  const sl=(path,label,min,max,step)=>`<div><label class="l">${label}</label><div class="slider"><input type="range" min="${min}" max="${max}" step="${step}" data-path="${path}"><output></output></div></div>`;
+  const animSel=n=>`<div><label class="l">Lyric animation</label><select data-path="config.outputs.${n}.text_anim.in"><option value="">Same as the default (step 6)</option>${Anim.groups.map(g=>`<optgroup label="${g}">${Anim.EFFECTS.filter(f=>f.group===g).map(f=>`<option value="${f.id}">${f.label}</option>`).join('')}</optgroup>`).join('')}</select></div>`;
+  const common=n=>`${animSel(n)}${sel(`config.outputs.${n}.text_scale`,'Lyric and credit text size',[['0.7','Smaller'],['0.8','A little smaller'],['1','Normal'],['1.15','A little larger'],['1.3','Larger']])}
+    <div>${sw(`config.outputs.${n}.opening`,'Opening card')}<br>${sw(`config.outputs.${n}.ending`,'End card')}<br>${sw(`config.outputs.${n}.interludes`,'Interlude pictures')}</div>`;
+  const card={
+   instagram:`<div class="grid">${sel('config.outputs.instagram.width','Size of the final video',[['1080','1080 × 1920 (full)'],['720','720 × 1280 (smaller file)']])}${common('instagram')}</div>`,
+   youtube:`<div class="grid">${sel('config.outputs.youtube.width','Size of the final video',[['1920','1920 × 1080 (full)'],['1280','1280 × 720 (smaller file)']])}${common('youtube')}
+     ${sl('config.outputs.youtube.split','Share of the width for the text side',0.4,0.7,0.005)}${sl('config.outputs.youtube.video_focus','Her video crop: top ↔ bottom',0,1,0.05)}${sl('config.outputs.youtube.blur','Blur of the text side',10,60,1)}</div>
+     <div class="hint">Her video fills the right side; the left side is a blurred copy that carries the lyrics, credits, interlude pictures and her name.</div>`,
+   reel:`<div class="grid">${sel('config.outputs.reel.width','Size of the final video',[['1080','1080 × 1920 (full)'],['720','720 × 1280 (smaller file)']])}${common('reel')}
+     <div><label class="l">Length (min:sec)</label>${tinp('config.outputs.reel.length',null)}</div><div><label class="l">Starts at (min:sec; empty = the first sung line)</label>${tinp('config.outputs.reel.start',null)}</div>
+     ${num('config.outputs.reel.fade','Fade in and out (seconds)','min="0" max="2" step="0.1"')}<div>${sw('config.outputs.reel.snap_to_line','Stop at the end of a lyric line if one ends within 10 s of the length')}</div></div>`
+  };
+  const openOut=new Set($$('#outputs details[open]').map(d=>d.dataset.o));
+  $('#outputs').innerHTML=OUT_NAMES.map(n=>`<details class="outcard" data-o="${n}" ${openOut.has(n)?'open':''}><summary><span>${O[n].label}</span>
+     <span class="sum" id="osum_${n}"></span></summary><div class="obody"><div class="row" style="margin-bottom:10px">${sw(`config.outputs.${n}.enabled`,'Make this video')}</div>${card[n]}
+     <div class="row" style="margin-top:12px"><button class="teal" data-run="${n}" onclick="startRun('preview',${n==='reel'?'null,null':"rangeFrom(),rangeTo()"},['${n}'])">Preview this one</button>
+     <button class="primary" data-run="${n}" onclick="startRun('final',null,null,['${n}'])">Make this one (final)</button><span id="have_${n}" class="hint" style="margin:0"></span></div></div></details>`).join('');
+  $$('#outputs [data-path]').forEach(bind);refreshSummaries();
+}
+async function startRun(mode,from,to,outputs,cached){
+  if(mode!=='align'&&(!outputs||!outputs.length))return alert('Switch on at least one video.');
+  try{if(dirty){await save();}await api('/api/run?name='+encodeURIComponent(S.name),{method:'POST',body:JSON.stringify({mode,from,to,outputs,cached})});}catch(e){return alert(e.message);}
+  RUNSTATE={running:true,mode,step:'',started:Date.now(),code:null};renderStatus();$('#runLog').textContent='Starting…';clearInterval(pollT);pollT=setInterval(poll,1500);poll();
+}
+async function poll(){
+  const j=await api('/api/status');const pill=$('#runPill');
+  const steps=(j.lines||[]).filter(l=>l.startsWith('STEP'));
+  if(j.running&&!RUNSTATE.running)RUNSTATE.started=RUNSTATE.started&&Date.now()-RUNSTATE.started<5000?RUNSTATE.started:Date.now();
+  RUNSTATE.running=j.running;RUNSTATE.mode=j.mode;RUNSTATE.code=j.code;RUNSTATE.step=steps.length?steps[steps.length-1].replace(/^STEP\s*/,''):'';renderStatus();
+  if(j.running&&!pollT)pollT=setInterval(poll,1500);
+  $('#runLog').textContent=(j.lines||[]).join('\n')||'…';$('#runLog').scrollTop=1e6;
+  pill.textContent=j.running?('Running: '+j.mode+(j.outputs?' · '+j.outputs.join(', '):'')):(j.code===0?'Finished':j.code==null?'Idle':'Stopped with an error');pill.className='chip '+(j.running?'warn':j.code===0?'good':j.code==null?'':'bad');
+  $$('button[data-run], #btnAllPrev, #btnAllFinal').forEach(b=>b.disabled=j.running);
+  const bz=$('#busy');bz.classList.toggle('hidden',!j.running);bz.textContent=j.running?(j.mode==='align'?'⏳ Placing the lyrics on the voice…':'⏳ Building the video…'):'';
+  if(!j.running&&j.song===S.name){clearInterval(pollT);pollT=null;
+    if(j.code!==0&&j.mode==='align'){$('#autoMsg').textContent='The lyrics could not be placed automatically. The reason is in the log in step 8; press "Auto-place lyrics from the voice" to try again.';}
+    if(j.code===0){if(j.mode==='align'){await refreshScreens(true);await loadAuto();$('#autoMsg').textContent='Lyrics placed on the voice (grey numbers). Check the purple bars against the green voice strip, and fix any line that is off.';}
+      else{showResults(j.mode,j.outputs||enabledOutputs());}}}
+}
+function showResults(mode,names){
+  const t=Date.now();
+  $('#resultTabs').innerHTML=names.map((n,i)=>`<button class="small ${i===0?'primary':''}" onclick="playOut('${n}','${mode}',this)">${S.config.outputs[n].label}</button> <a href="/media/${S.name}/out/${n}_${mode}.mp4" download="${S.name}_${n}_${mode}.mp4" class="hint" style="margin:0 12px 0 2px">download</a>`).join('');
+  playOut(names[0],mode,null,t);
+}
+function playOut(n,mode,btn,t){$$('#resultTabs button').forEach(b=>b.classList.remove('primary'));if(btn)btn.classList.add('primary');else{const b=$('#resultTabs button');if(b)b.classList.add('primary');}
+  $('#outVid').src=`/media/${S.name}/out/${n}_${mode}.mp4?t=${t||Date.now()}`;}
+async function autoPlace(){
+  if(!SCR.length)return alert('Type the lyrics first (step 2).');
+  $('#autoMsg').textContent='Placing the lyrics on the voice: about 2 minutes the first time (the voice is separated first if you did not upload it).';
+  await startRun('align');
+}
+poll().catch(()=>{});
+</script>
+</body>
+</html>

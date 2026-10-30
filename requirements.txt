@@ -1,0 +1,21 @@
+# core
+numpy<2
+scipy<1.14
+pillow
+playwright
+soundfile
+# lyric placement (aligner model downloads on first use, about 1.2 GB) and romanising Telugu/Hindi
+torch==2.2.2
+torchaudio==2.2.2
+uroman
+# separating her voice from a song (demucs itself is installed by scripts/setup.sh with --no-deps, see docs/SETUP.md)
+julius
+einops
+pyyaml
+tqdm
+openunmix
+lameenc
+dora-search
+treetable
+# optional experiment: lib/transcribe.py (not used by the build)
+faster-whisper

@@ -1,0 +1,87 @@
+{
+  "title": "",
+  "language": "telugu",
+  "files": {
+    "master": null,
+    "vocal": null,
+    "raw_video": null,
+    "final_export": null,
+    "logo": null
+  },
+  "sync": {
+    "method": "auto",
+    "raw_video_offset": null
+  },
+  "sections": [],
+  "lyric_times": [],
+  "photo_use": {},
+  "photo_motion": "zoom_in",
+  "look": {
+    "lyrics_font": "Noto Sans Telugu",
+    "lyrics_weight": 700,
+    "lyrics_size": 58,
+    "lyrics_lines": 2,
+    "lyrics_top": 0.17,
+    "lyrics_color": "#ffffff",
+    "lyrics_glow_a": "#ff4fa3",
+    "lyrics_glow_b": "#35e0e0",
+    "lyrics_outline": "#3a0f2e",
+    "credits_font": "Noto Sans Telugu",
+    "credits_weight": 700,
+    "credits_size": 56,
+    "credits_color": "#ffffff",
+    "credits_glow": "#ff4fa3",
+    "title_size": 104,
+    "title_color": "#ffffff",
+    "title_glow": "#ff4fa3",
+    "logo_mode": "image",
+    "logo_font": "Kaushan Script",
+    "logo_text": "Soujanya Madabhushi",
+    "logo_color": "#fff3c4",
+    "logo_glow": "#c2185b",
+    "logo_size": 0.34,
+    "logo_x": 0.06,
+    "logo_y": 0.03,
+    "end_font": "Kaushan Script",
+    "end_size": 150,
+    "end_color": "#0f6b3a",
+    "end_glow": "#9bff9b",
+    "end_tint": "#1f8f4a",
+    "end_blur": 24
+  },
+  "transitions": {
+    "opening_to_video": {
+      "name": "pixelize",
+      "seconds": 0.8
+    },
+    "video_to_interlude": {
+      "name": "fade",
+      "seconds": 0.8
+    },
+    "interlude_to_video": {
+      "name": "fade",
+      "seconds": 0.8
+    },
+    "section_to_section": {
+      "name": "dissolve",
+      "seconds": 0.6
+    },
+    "video_to_end": {
+      "name": "fade",
+      "seconds": 1.0
+    }
+  },
+  "opening": {
+    "photo": null,
+    "seconds": 7
+  },
+  "ending": {
+    "photo": null,
+    "seconds": 6
+  },
+  "export": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  }
+}

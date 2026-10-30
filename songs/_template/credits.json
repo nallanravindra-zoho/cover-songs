@@ -1,0 +1,32 @@
+{
+  "opening": {
+    "title_line": "",
+    "film": "",
+    "lyricist": "",
+    "music": "",
+    "singers": "",
+    "cover_by": "Soujanya Madabhushi"
+  },
+  "labels": {
+    "telugu": [
+      "సినిమా",
+      "గీత రచయిత",
+      "సంగీతం",
+      "గానం"
+    ],
+    "hindi": [
+      "फ़िल्म",
+      "गीतकार",
+      "संगीत",
+      "गायक"
+    ]
+  },
+  "ending": {
+    "name": "Soujanya Madabhushi",
+    "extra_lines": []
+  },
+  "caption": {
+    "text": "",
+    "hashtags": "#coversong"
+  }
+}
