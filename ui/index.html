@@ -33,11 +33,13 @@ h1{margin:0;font-size:29px;font-weight:800}
 .sub{opacity:.92;font-size:15px}
 .song-pick{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .song-pick select{color:var(--ink);min-width:170px}
-.layout{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:225px minmax(0,1fr);gap:22px;padding:18px 16px 110px}
+.layout{max-width:1640px;margin:0 auto;display:grid;grid-template-columns:58px minmax(0,1fr);gap:14px;padding:14px 12px 110px}
 @media(max-width:940px){.layout{grid-template-columns:minmax(0,1fr)}.steps{position:static!important;flex-direction:row;overflow:auto}}
-.steps{position:sticky;top:14px;align-self:start;display:flex;flex-direction:column;gap:4px;background:linear-gradient(90deg,var(--g1),var(--g2)) top/100% 4px no-repeat,var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:16px 10px 12px}
-.steps a{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;text-decoration:none;color:var(--mute);font-weight:700;font-size:15.5px;white-space:nowrap}
-.steps a b{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--field);border:1px solid var(--line);font-size:13px}
+.steps{position:sticky;top:14px;align-self:start;display:flex;flex-direction:column;gap:4px;background:linear-gradient(90deg,var(--g1),var(--g2)) top/100% 4px no-repeat,var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:12px 6px;z-index:20}
+.steps a{display:flex;justify-content:center;align-items:center;padding:7px 0;border-radius:12px;text-decoration:none;color:var(--mute);font-weight:700;font-size:15.5px;white-space:nowrap;position:relative}
+.steps a .lbl{display:none;position:absolute;left:50px;top:50%;transform:translateY(-50%);background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:var(--shadow);padding:6px 12px;border-radius:10px;z-index:30}
+.steps a:hover .lbl{display:block}
+.steps a b{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--field);border:1px solid var(--line);font-size:14px}
 .steps a:hover{background:color-mix(in srgb,var(--g1) 8%,var(--card));color:var(--ink)}
 .steps a.on{background:var(--grad);color:#fff;box-shadow:0 4px 14px color-mix(in srgb,var(--g1) 35%,transparent)}
 .steps a.on b{background:rgba(255,255,255,.25);color:#fff;border-color:transparent}
@@ -169,12 +171,25 @@ details.outcard .obody{padding:14px 16px}
 .cres{display:flex;flex-direction:column;gap:8px}
 .cres .chip{border-radius:12px;font-weight:600;padding:8px 12px}
 /* live preview and timeline */
-.ed{display:grid;grid-template-columns:auto 156px minmax(0,1fr);gap:14px;align-items:start;margin-top:8px}
-@media(max-width:900px){.ed{grid-template-columns:auto 156px}#edPanel{grid-column:1/-1}}
+.ed{display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:start;margin-top:6px}
+@media(max-width:800px){.ed{grid-template-columns:1fr}}
 #edPanel{overflow:auto;padding-right:4px}
-.edtop{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.edtop #edFullBtn{margin-left:auto}
-#edTools{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
-#edTools button{display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 2px;font-size:12.5px;border-radius:12px;white-space:normal;line-height:1.15;min-height:58px}
+.edtop{display:flex;gap:8px;align-items:center;margin-left:12px;font-size:15px;font-weight:600}.edtop .row{gap:6px}
+#edTools .edtrans{display:flex;gap:6px;align-items:center;flex:none}#edTools .edtrans button{min-width:0}#edTools .edtrans #edPlay{min-width:96px;font-size:15px;flex-direction:row}
+.tsep{width:1px;align-self:stretch;background:var(--line);margin:0 4px;flex:none}
+#edTools{display:flex;gap:6px;margin-top:8px;overflow-x:auto;padding-bottom:2px}
+#edTools button{display:flex;flex-direction:column;align-items:center;gap:0;padding:4px 10px;font-size:12px;border-radius:11px;line-height:1.1;min-width:66px;flex:none}
+#edTools button i{font-size:19px!important}
+#edStageBox{position:relative;width:fit-content}
+#edMaxBtn{position:absolute;right:8px;top:16px;z-index:6;padding:3px 9px;font-size:18px;border-radius:9px;background:rgba(20,10,30,.55);color:#fff;border:1px solid rgba(255,255,255,.35)}
+#edMaxBar{display:none}
+#edStageBox:fullscreen{background:#000;display:grid;place-items:center;width:100vw;height:100vh}
+#edStageBox:fullscreen #edStage{margin:0;border-radius:0}
+#edStageBox:fullscreen #edMaxBtn{display:none}
+#edStageBox:fullscreen #edMaxBar{display:flex;position:fixed;left:50%;bottom:22px;transform:translateX(-50%);gap:8px;align-items:center;background:rgba(15,8,25,.78);padding:10px 14px;border-radius:16px;z-index:10;transition:opacity .3s;width:min(760px,94vw)}
+#edStageBox:fullscreen #edMaxBar.idle{opacity:0}
+#edMaxBar button{background:rgba(255,255,255,.12);color:#fff;border:0;font-size:16px;padding:8px 12px}
+#edMaxBar input{flex:1;accent-color:#c08bff}#edMaxBar span{color:#fff;font-weight:800;font-variant-numeric:tabular-nums;min-width:110px;text-align:right}
 #edTools button i{font-style:normal;font-size:21px}#edTools button.on{background:var(--grad);color:#fff;border-color:transparent}
 #edPop{position:fixed;right:16px;top:64px;width:min(470px,94vw);max-height:calc(100vh - 84px);overflow:auto;z-index:70;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 60px rgba(60,20,90,.35);padding:0 16px 16px;display:none}
 #edPop.on{display:block}
@@ -188,13 +203,23 @@ details.outcard .obody{padding:14px 16px}
 .ptile.tr .ph0,.ptile.tr video{width:100%;aspect-ratio:9/16;border-radius:8px;display:grid;place-items:center;background:#111;color:#aaa;font-size:11px;object-fit:cover}
 .moico{width:58px;height:84px;margin:0 auto;border-radius:8px;background:repeating-linear-gradient(45deg,#7a6aa8 0 8px,#9585c4 8px 16px);position:relative;overflow:hidden}
 .moico i{position:absolute;border:2px solid #fff;box-shadow:0 0 0 999px rgba(0,0,0,.45);border-radius:2px}
+.fonttiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:6px;max-height:210px;overflow:auto}
+.ftile{border:2px solid var(--line);border-radius:10px;padding:5px 6px;cursor:pointer;text-align:center;background:var(--field)}.ftile.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--field))}
+.ftile b{display:block;font-size:19px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ftile small{color:var(--mute);font-size:11px}
+.pal{position:relative}.favx{position:absolute;right:2px;top:0;font-size:11px;cursor:pointer;opacity:.6}
+.cpick{display:flex;flex-direction:column;align-items:center;font-size:11px}.cpick input{width:44px;height:30px;padding:1px}
+.idea{width:150px;border:1px solid var(--line);border-radius:10px;padding:4px;background:var(--field)}
+.ideabg{height:52px;border-radius:7px;background-size:cover;background-position:center;display:grid;place-items:center;cursor:pointer;overflow:hidden}
+.effico{width:58px;height:58px;margin:0 auto;border-radius:12px;display:grid;place-items:center;font-size:30px;background:linear-gradient(135deg,#3a2a5c,#6a3bd9)}
 #edToast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#1f1a33;color:#fff;padding:10px 16px;border-radius:12px;font-weight:700;opacity:0;transition:opacity .3s;pointer-events:none;z-index:80;max-width:80vw;text-align:center}
 #s0.edfull{position:fixed;inset:0;z-index:50;margin:0;border-radius:0;overflow:auto;padding:10px 18px}
 #s0.edfull>h2{display:none}
 #edLeft{min-width:220px}
 #edPanel{min-width:0}
 #edStage{position:relative;overflow:hidden;border-radius:14px;background:#000;margin:8px 0;touch-action:none;user-select:none}
-#edStage canvas,#edOver,#edFade{position:absolute;left:0;top:0}
+#edStage canvas,#edOver,#edFade,#edFxWrap{position:absolute;left:0;top:0}
+#edFxWrap{width:100%;height:100%;transform-origin:50% 50%}
+#edInline{position:absolute;z-index:5;background:rgba(10,5,20,.82);color:#fff;border:2px solid var(--accent);border-radius:10px;font:600 20px/1.35 Manrope,sans-serif;text-align:center;padding:6px;resize:none;outline:none}
 #edBase{width:100%;height:100%}
 #edOver{overflow:hidden;pointer-events:none}
 #edInner{position:absolute;left:0;top:0;transform-origin:0 0;overflow:hidden}
@@ -229,15 +254,15 @@ details.edfx{margin-top:8px}details.edfx>summary{cursor:pointer;font-size:15px}
 
 <div class="layout">
 <nav class="steps" id="steps">
-  <a href="#s0"><b>▶</b>Preview &amp; edit</a>
-  <a href="#s1" class="on"><b>1</b>Song</a>
-  <a href="#s3"><b>2</b>Lyrics</a>
-  <a href="#s2"><b>3</b>Files</a>
-  <a href="#s4"><b>4</b>Interludes &amp; transitions</a>
-  <a href="#s5"><b>5</b>Photos</a>
-  <a href="#s6"><b>6</b>Look &amp; fonts</a>
-  <a href="#s7"><b>7</b>Credits &amp; cards</a>
-  <a href="#s9"><b>8</b>Check &amp; make</a>
+  <a href="#s0" title="Preview & edit"><b>▶</b><span class="lbl">Preview &amp; edit</span></a>
+  <a href="#s1" class="on" title="Song"><b>1</b><span class="lbl">Song</span></a>
+  <a href="#s3" title="Lyrics"><b>2</b><span class="lbl">Lyrics</span></a>
+  <a href="#s2" title="Files"><b>3</b><span class="lbl">Files</span></a>
+  <a href="#s4" title="Interludes & transitions"><b>4</b><span class="lbl">Interludes &amp; transitions</span></a>
+  <a href="#s5" title="Photos"><b>5</b><span class="lbl">Photos</span></a>
+  <a href="#s6" title="Look & fonts"><b>6</b><span class="lbl">Look &amp; fonts</span></a>
+  <a href="#s7" title="Credits & cards"><b>7</b><span class="lbl">Credits &amp; cards</span></a>
+  <a href="#s9" title="Check & make"><b>8</b><span class="lbl">Check &amp; make</span></a>
 </nav>
 
 <main id="main">
@@ -249,32 +274,44 @@ details.edfx{margin-top:8px}details.edfx>summary{cursor:pointer;font-size:15px}
 </div>
 
 <section class="card" id="s0">
-  <h2><span class="n">▶</span>Preview &amp; edit <span id="i0"></span></h2>
-  <div class="edtop"><div class="row" id="edOuts"></div><span class="hint" style="margin:0">Everything you change shows here at once.</span><button class="small" id="edFullBtn" onclick="edFull()">⛶ Full screen</button></div>
+  <h2><span class="n">▶</span>Preview &amp; edit <span id="i0"></span><span class="edtop" onclick="event.stopPropagation()"><span class="row" id="edOuts"></span><button class="small" id="edFullBtn" onclick="edFull()">⛶ Editor full screen</button></span></h2>
   <div class="ed">
     <div id="edLeft">
-      <div id="edStage"><canvas id="edBase"></canvas><div id="edOver"><div id="edInner"><div id="edLogo"></div><div id="edLyr" style="position:absolute;inset:0"></div></div></div><canvas id="edGL"></canvas><div id="edFade"></div><div id="edMsg"></div></div>
+      <div id="edStageBox"><div id="edStage"><div id="edFxWrap"><canvas id="edBase"></canvas><div id="edOver"><div id="edInner"><div id="edLogo"></div><div id="edLyr" style="position:absolute;inset:0"></div></div></div><canvas id="edGL"></canvas></div><div id="edFade"></div><div id="edMsg"></div></div>
+        <button id="edMaxBtn" onclick="edMax()" title="See the preview full screen">⛶</button>
+        <div id="edMaxBar"><button onclick="edJump(-1)" title="Previous screen or picture">⏮</button><button onclick="edSeek(ED.vid.currentTime-5)" title="5 seconds back">−5s</button>
+          <button id="edMaxPlay" onclick="edPlay()">▶</button><button onclick="edSeek(ED.vid.currentTime+5)" title="5 seconds on">+5s</button><button onclick="edJump(1)" title="Next screen or picture">⏭</button>
+          <input type="range" id="edMaxSeek" min="0" max="1" step="0.01" value="0" oninput="edSeek(+this.value)"><span id="edMaxTime">0:00</span><button onclick="edMax()" title="Back (Esc)">✕</button></div></div>
       <video id="edVid" playsinline preload="auto" style="display:none"></video>
       <svg width="0" height="0" style="position:absolute"><filter id="edDim" color-interpolation-filters="sRGB"><feComponentTransfer>
-        <feFuncR type="linear" slope="1" intercept="-0.29"/><feFuncG type="linear" slope="1" intercept="-0.29"/><feFuncB type="linear" slope="1" intercept="-0.29"/></feComponentTransfer></filter></svg>
-      <div class="edtrans"><button class="small" onclick="edJump(-1)" title="Previous screen or picture">⏮</button><button class="primary" id="edPlay" onclick="edPlay()" style="min-width:104px">▶ Play</button><button class="small" onclick="edJump(1)" title="Next screen or picture">⏭</button><span id="edTime">0:00</span></div>
+        <feFuncR type="linear" slope="1" intercept="-0.29"/><feFuncG type="linear" slope="1" intercept="-0.29"/><feFuncB type="linear" slope="1" intercept="-0.29"/></feComponentTransfer></filter>
+        <!-- effects (editor.js edEffects): add light, black and white (luma as ffmpeg's hue=s=0), red/blue split -->
+        <filter id="edAdd" color-interpolation-filters="sRGB"><feComponentTransfer><feFuncR id="edAddR" type="linear" slope="1" intercept="0"/><feFuncG id="edAddG" type="linear" slope="1" intercept="0"/><feFuncB id="edAddB" type="linear" slope="1" intercept="0"/></feComponentTransfer></filter>
+        <filter id="edGray" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values=".299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 0 0 0 1 0"/></filter>
+        <filter id="edRGB" color-interpolation-filters="sRGB" x="0" y="0" width="100%" height="100%">
+          <feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0" result="r"/><feOffset id="edRGBr" in="r" dx="0" result="r2"/>
+          <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0" result="g"/>
+          <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0" result="b"/><feOffset id="edRGBb" in="b" dx="0" result="b2"/>
+          <feBlend in="r2" in2="g" mode="screen" result="rg"/><feBlend in="rg" in2="b2" mode="screen"/></filter></svg>
       <div id="edNotes"></div>
     </div>
-    <div id="edTools">
+    <div id="edPanel"></div>
+  </div>
+  <div id="edTools">
+    <span class="edtrans"><button class="small" onclick="edJump(-1)" title="Previous screen or picture">⏮</button><button class="primary" id="edPlay" onclick="edPlay()" style="min-width:104px">▶ Play</button><button class="small" onclick="edJump(1)" title="Next screen or picture">⏭</button><span id="edTime">0:00</span></span><span class="tsep"></span>
       <button data-k="split" onclick="edSplit()" title="Cut her video at the playhead into two parts"><i>✂️</i>Split</button>
       <button data-k="filter" onclick="edPop('filter')" title="Filter for what is under the playhead"><i>🎨</i>Filter</button>
       <button data-k="motion" onclick="edPop('motion')" title="Motion of her video or the picture under the playhead"><i>🎥</i>Motion</button>
       <button data-k="anim" onclick="edPop('anim')" title="How the lyric screen comes in and goes out"><i>✨</i>Lyric anim.</button>
       <button data-k="trans" onclick="edPop('trans')" title="The transition nearest the playhead"><i>🔀</i>Transition</button>
+      <button data-k="effects" onclick="edPop('effects')" title="Effects over a stretch of time: shake, flash, glitch, RGB split…"><i>💥</i>Effects</button>
       <button data-k="text" onclick="edPop('text')" title="Font, colours and size of the lyrics"><i>🔤</i>Text</button>
       <button data-k="edit" onclick="edEditHere()" title="Change the words of the lyric screen under the playhead, or remove it"><i>✏️</i>Lyrics</button>
       <button data-k="add" onclick="edAddScreen()" title="A new lyric screen at the playhead"><i>➕</i>Add lyric</button>
       <button data-k="pics" onclick="edPicsHere()" title="The pictures of the interlude near the playhead"><i>🖼️</i>Pictures</button>
-    </div>
-    <div id="edPanel"></div>
+      <button data-k="del" onclick="edDelete()" title="Delete the selected block (or press Delete)"><i>🗑️</i>Delete</button>
+    <span class="tsep"></span><button onclick="edZoom(0.67)" title="Timeline: zoom out"><i>➖</i>Zoom out</button><button onclick="edZoom(1.5)" title="Timeline: zoom in"><i>➕</i>Zoom in</button><button onclick="edFit()" title="Timeline: the whole song"><i>↔️</i>Whole song</button>
   </div>
-  <div class="row" style="margin-top:10px"><b>Timeline</b><button class="small" onclick="edZoom(0.67)">− Zoom out</button><button class="small" onclick="edZoom(1.5)">+ Zoom in</button><button class="small" onclick="edFit()">Whole song</button>
-    <span class="hint" style="margin:0" title="Blue: parts of her video. Purple: lyrics (orange: moved, pink: added). Teal: interludes. Orange: cards.">Drag blocks and their ends.</span></div>
   <div id="edTLWrap"><canvas id="edTL"></canvas><div id="edTLSpace"></div></div>
   <div id="edPop"><div class="pophead"><span id="edPopHead"></span><button class="small" onclick="edPopClose()">Done ✓</button></div><div id="edPopBody"></div></div>
   <div id="edToast"></div>
@@ -908,7 +945,7 @@ const TLIST=[...TREND.filter(n=>!['pixelize','hblur','zoomin','distance','radial
 const TCAT={'Trending ★':{test:n=>TREND.includes(n)},Fade:/^fade|dissolve/,'Wipe':/^wipe/,'Slide':/^(slide|smooth)/,'Cover & reveal':/^(cover|reveal)/,'Shapes':/^(circle|rect|vert|horz|radial)/,'Blur, pixel & zoom':/^(pixelize|hblur|distance|zoomin|squeeze)/,'Diagonal':/^diag/,'Slices & wind':/(slice|wind)$/};
 let tCat='All';
 const TLAB={glitchrows:'Glitch rows',glitchblocks:'Glitch blocks',mosaic:'Mosaic',whipleft:'Whip left',whipright:'Whip right',whipup:'Whip up',zoomthrough:'Zoom through',zoomout:'Zoom out',flash:'Flash',ripple:'Ripple',diamond:'Diamond',barslide:'Bar slide',blindsv:'Blinds (vertical)',blindsh:'Blinds (horizontal)',checker:'Checkerboard'};
-function tLabel(n){if(TLAB[n])return TLAB[n];const w={tl:'top-left',tr:'top-right',bl:'bottom-left',br:'bottom-right',h:'horizontal',v:'vertical'};return n.replace(/(wipe|slide|smooth|cover|reveal|diag|circle|vert|horz|squeeze|fade)(.*)/,(m,a,b)=>a+(b?' '+(w[b]||b):'')).replace(/^./,x=>x.toUpperCase());}
+function tLabel(n){if(n==='cut')return 'None (cut)';if(TLAB[n])return TLAB[n];const w={tl:'top-left',tr:'top-right',bl:'bottom-left',br:'bottom-right',h:'horizontal',v:'vertical'};return n.replace(/(wipe|slide|smooth|cover|reveal|diag|circle|vert|horz|squeeze|fade)(.*)/,(m,a,b)=>a+(b?' '+(w[b]||b):'')).replace(/^./,x=>x.toUpperCase());}
 let activeSlot='opening_to_video',tq=Promise.resolve();
 function tNames(v){return [v.name];}
 const TPAGE=10;
@@ -973,7 +1010,7 @@ function photoUrl(f){return f?`/media/${S.name}/photos/${encodeURIComponent(f)}`
 function updatePreviews(){
   if(!S||!$('#pvLyric'))return;const L=S.config.look,bg=backdropUrl;
   const bgImg=u=>u?`<img class="bgimg" src="${u}">`:'';
-  $('#pvLyric').innerHTML=`<div class="inner">${bgImg(bg)}${logoHtml(L)}<div style="position:absolute;left:4%;right:4%;top:${L.lyrics_top*100}%">${gtext(sampleLines().slice(0,L.lyrics_lines),{font:fontCss(L.lyrics_font),weight:L.lyrics_weight,size:L.lyrics_size,left:L.lyrics_fill_left,mid:L.lyrics_fill_mid,right:L.lyrics_fill_right,outline:L.lyrics_outline,ow:L.lyrics_outline_w,glow:L.lyrics_glow})}</div></div>`;
+  $('#pvLyric').innerHTML=`<div class="inner">${bgImg(bg)}${logoHtml(L)}<div style="position:absolute;left:${4+(+L.lyrics_x||0)*100}%;right:${4-(+L.lyrics_x||0)*100}%;top:${L.lyrics_top*100}%">${gtext(sampleLines().slice(0,L.lyrics_lines),{font:fontCss(L.lyrics_font),weight:L.lyrics_weight,size:L.lyrics_size,left:L.lyrics_fill_left,mid:L.lyrics_fill_mid,right:L.lyrics_fill_right,outline:L.lyrics_outline,ow:L.lyrics_outline_w,glow:L.lyrics_glow})}</div></div>`;
   const O=S.credits.opening,lab=S.credits.labels[S.config.language]||[],cr=[[lab[0],O.film],[lab[1],O.lyricist],[lab[2],O.music],[lab[3],O.singers]].filter(x=>x[1]);
   const title=O.title_line||S.config.title||sampleLines().join(' ');
   const cstyle=`font-family:${fontCss(L.credits_font)};font-weight:${L.credits_weight};`;
@@ -1030,7 +1067,7 @@ function renderDetected(){
   if(!SCR.length||gs==null){const m='<div class="hint">Press “Auto-place lyrics from the voice” (above) and every instrumental gap appears here, with its picture and transitions.</div>';box1.innerHTML=m;box2.innerHTML=m;return;}
   if(!gs.length){const m='<div class="hint">No instrumental gap longer than 4 seconds was found between the lyrics.</div>';box1.innerHTML=m;box2.innerHTML=m;return;}
   const T=S.config.transitions,min=S.config.interlude_min_seconds;
-  const opt=(cur,def)=>`<option value="">Same as default (${tLabel(def)})</option>`+TLIST.map(n=>`<option value="${n}" ${cur===n?'selected':''}>${tLabel(n)}</option>`).join('');
+  const opt=(cur,def)=>`<option value="">Same as default (${tLabel(def)})</option><option value="cut" ${cur==='cut'?'selected':''}>None (cut)</option>`+TLIST.map(n=>`<option value="${n}" ${cur===n?'selected':''}>${tLabel(n)}</option>`).join('');
   box1.innerHTML=`<div style="overflow-x:auto"><table class="t"><tr><th>#</th><th>Instrumental gap</th><th>Picture here?</th><th>Transition in</th><th>Transition out</th></tr>`+gs.map(g=>`<tr>
     <td>${g.i+1}</td><td>${fmt(g.gap_from)} – ${fmt(g.gap_to)}<br><small style="color:var(--mute)">${fmt(g.len)} long${g.on?' · picture '+fmt(g.start)+' – '+fmt(g.end):''}</small></td>
     <td><select onchange="setIl(${g.i},'on',this.value===''?null:this.value==='yes')"><option value="" ${g.mode==='auto'?'selected':''}>Automatic: ${g.auto?'Yes':'No'} (rule: longer than ${fmt(min)})</option><option value="yes" ${g.mode==='yes'?'selected':''}>Yes, always</option><option value="no" ${g.mode==='no'?'selected':''}>No picture</option></select></td>

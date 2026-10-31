@@ -4,7 +4,7 @@
 
 Makes test changes (in memory only, the song's settings are not changed): the second interlude gets two pictures (a filter, a
 motion and a glitch transition between them), her video is cut before it with a filter and motion on the part after the cut,
-and the lyrics get new words on one screen and lose another. It builds that part of the video into a temporary folder, plays the same moments in the page's
+the lyrics get new words on one screen and lose another, and three effects (RGB split, flash, shake) are put on. It builds that part of the video into a temporary folder, plays the same moments in the page's
 preview (headless Chrome) and compares the pictures. Differences are on a 0-255 scale, averaged over the frame: "overall" on
 8x8 blocks (colour, position, timing), "detail" pixel by pixel (the preview plays a smaller copy of her video, so it is softer).
 Exit code 1 if a moment differs by more than the limits.
@@ -33,11 +33,16 @@ def blocks(a, b, n=8):
 
 def overrides(c, il_start):
     """The test changes: two pictures in the second interlude; her video cut 8 s before it, the part after the cut warm and slowly
-    zooming in (with dark corners); the words of the first screen changed and the second screen taken out."""
+    zooming in (with dark corners); the words of the first screen changed and the second screen taken out; effects: an RGB split
+    before the cut, a flash on her zooming part, a shake over the way into the interlude; every lyric screen its own colours and size."""
     ph = c["photos"]
     il = {"on": True, "pictures": [{"photo": ph[0] if ph else "", "filter": "vintage"}, {"photo": ph[1] if len(ph) > 1 else "", "filter": "bw", "motion": "drift_left", "trans": "glitchrows"}]}
     conf = {"video_clips": {"cuts": [round(il_start - 8, 2)], "fx": [{}, {"filter": "warm", "motion": "zoom_in", "adjust": {"v": 0.4}}]},
-            "screen_text": {"0": ["checking new words", "on two lines"]}, "screen_off": {"1": True}}
+            "screen_text": {"0": ["checking new words", "on two lines"]}, "screen_off": {"1": True},
+            "screen_style": {str(i): {"lyrics_size": 66, "lyrics_fill_left": "#ffe45e", "lyrics_fill_mid": "#ffffff", "lyrics_fill_right": "#7fe6e0", "lyrics_glow": "#ff3d9a"} for i in range(80)},
+            "effects": [{"type": "rgb", "start": round(il_start - 10, 2), "end": round(il_start - 8.5, 2)},
+                        {"type": "flash", "start": round(il_start - 4.25, 2), "end": round(il_start - 3.6, 2)},
+                        {"type": "shake", "start": round(il_start - 0.3, 2), "end": round(il_start + 1.2, 2)}]}
     return {"il": il, "conf": conf}
 
 

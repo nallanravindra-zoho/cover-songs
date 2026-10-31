@@ -37,7 +37,7 @@ KINDS = {
 }
 # the 9:16 look measured from Srikaramagu.mp4 (see docs/SAMPLE_ANALYSIS.md); fonts are the closest free match
 DEFAULT_LOOK = {
-    "lyrics_font": "Noto Sans Telugu", "lyrics_weight": 600, "lyrics_size": 58, "lyrics_lines": 2, "lyrics_top": 0.17,
+    "lyrics_font": "Noto Sans Telugu", "lyrics_weight": 600, "lyrics_size": 58, "lyrics_lines": 2, "lyrics_top": 0.17, "lyrics_x": 0.0,
     "lyrics_fill_left": "#ff4f8b", "lyrics_fill_mid": "#f2dcec", "lyrics_fill_right": "#7fe6e0",
     "lyrics_outline": "#0d0620", "lyrics_outline_w": 0.10, "lyrics_glow": "#6a3bd9",
     "credits_font": "Noto Sans Telugu", "credits_weight": 600, "credits_size": 56,
@@ -385,6 +385,31 @@ def save_preset(name, data):
     (PRESETS / f"{name}.json").write_text(json.dumps({"look": data["look"], "transitions": data["transitions"]}, indent=2) + "\n", encoding="utf-8")
 
 
+PALETTES = HERE / "content" / "palettes.json"
+
+
+def list_palettes():
+    """Colour sets for the lyrics that Ravi liked (saved from the preview's colour ideas); offered again in every song."""
+    try:
+        return json.loads(PALETTES.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+
+
+def save_palette(data):
+    """Add one ({"name", "c": [left, mid, right, outline, glow]}) or, with "remove", take one out (by its colours)."""
+    pals = list_palettes()
+    c = data.get("c")
+    if not (isinstance(c, list) and len(c) == 5 and all(isinstance(x, str) and re.fullmatch(r"#[0-9a-fA-F]{6}", x) for x in c)):
+        raise ValueError("a colour set is five colours like #ff4f8b")
+    pals = [x for x in pals if x.get("c") != c]
+    if not data.get("remove"):
+        pals.insert(0, {"name": str(data.get("name") or "My colours")[:40], "c": c})
+    PALETTES.parent.mkdir(parents=True, exist_ok=True)
+    PALETTES.write_text(json.dumps(pals[:60], indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    return pals[:60]
+
+
 def list_fonts():
     return sorted(f.name for f in FONTS.glob("*") if f.suffix.lower() in FONT_EXT) if FONTS.exists() else []
 
@@ -673,6 +698,8 @@ class H(BaseHTTPRequestHandler):
                 return self.send_json({"results": check_song(q.get("name"))})
             if u.path == "/api/presets":
                 return self.send_json(list_presets())
+            if u.path == "/api/palettes":
+                return self.send_json({"palettes": list_palettes()})
             if u.path == "/api/fonts":
                 return self.send_json({"files": list_fonts()})
             if u.path == "/api/backdrop":
@@ -721,6 +748,8 @@ class H(BaseHTTPRequestHandler):
                 (song_dir(q["name"]) / "photos").mkdir(exist_ok=True)
                 shutil.copy(src, song_dir(q["name"]) / "photos" / src.name)
                 return self.send_json({"ok": True, "file": src.name})
+            if u.path == "/api/palettes":
+                return self.send_json({"palettes": save_palette(data)})
             if u.path == "/api/plan":
                 return self.send_json(preview_plan(q["name"], data, q.get("output", "instagram")))
             if u.path == "/api/proxy":

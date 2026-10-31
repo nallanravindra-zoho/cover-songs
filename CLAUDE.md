@@ -31,6 +31,9 @@ A local settings page (`settings.py`, port 8766) drives everything. Owner: Ravi 
                      Lyric edits: `screen_text{i: lines}`, `screen_off{i: true}`, `added_screens[{start,end,lines,anim}]` (ids "a0".. ),
                      `screen_anim{i: effect}`; her video: `video_clips{cuts: [s], fx: [{filter, amount, adjust, motion}] per part}`
                      (pipeline.edited_screens / video_clips; render.video_fx_chain: lut3d, gblur, zoompan, vignette, noise per part).
+                     `screen_pos{i: {x, y}}` and `screen_style{i: {lyrics_* keys}}` per screen (added: `pos`, `style`); `look.lyrics_x`;
+                     `effects[{type, start, end, amount}]` on the whole frame (fx.effect_graph; editor.js edEffects: the same formulas);
+                     transition name "cut" = straight cut (a 0.1 s fade: 1 frame is too short for xfade). content/palettes.json: saved colours.
 - `content/presets/` saved looks. `brand/` her logo (ignored, upload again on a new machine).
 
 ## Rules learned the hard way

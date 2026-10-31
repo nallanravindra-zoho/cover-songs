@@ -96,6 +96,8 @@ def forward(expr):
 
 def xfade_arg(name):
     """The value for xfade's transition option, plus any extra option text: ("circleopen", "") or ("custom", ":expr='...'")."""
+    if name == "cut":                                 # no transition: a three-frame fade (pipeline.tdur), seen as a straight cut
+        return "fade", ""
     if name in CUSTOM:
         return "custom", ":expr='" + _expand(forward(inline_registers(CUSTOM[name]))).replace("'", "") + "'"
     return name, ""

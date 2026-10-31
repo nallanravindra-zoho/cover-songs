@@ -30,21 +30,29 @@ their animation, her name, the opening and end cards, and the interlude pictures
 between Instagram, YouTube and the reel. Every change anywhere on the page shows at once. The picture, the tools and the timeline fit
 in the window; **⛶ Full screen** gives the editor the whole window.
 
-**Tools** (InShot-style; each opens its own popup and changes what is under the playhead):
+**Tools** (one row under the picture, InShot-style; each changes what is under the playhead or what is selected):
 - ✂️ **Split** cuts her video at the playhead, so each part can have its own filter and motion.
-- 🎨 **Filter**: 27 looks with strength and fine adjustments (brightness, contrast, colour, warmth, tint, fade, dark corners, grain,
-  soft blur), shown on the current frame. For her video (the part under the playhead) or an interlude picture; "use for all" copies it.
+- 🎨 **Filter**: 27 looks with strength and fine adjustments, shown on the current frame, for her video's part or an interlude picture.
 - 🎥 **Motion**: 14 (zooms, drifts, pulse, sway) for her video's part or a picture.
 - ✨ **Lyric anim.**: 46 animations for the lyric screen under the playhead, or for every screen.
-- 🔀 **Transition**: the transition nearest the playhead (cards, into/out of an interlude, between two pictures); it plays at once.
-- 🔤 **Text**: font, colours and size of the lyrics.
-- ✏️ **Lyrics**: change the words of the screen under the playhead, or remove it. ➕ **Add lyric**: a new screen at the playhead.
-- 🖼️ **Pictures**: the pictures of the nearest interlude (several, each with its own photo, filter, motion and transition).
+- 🔀 **Transition**: the transition nearest the playhead; "None (cut)" for a straight cut. It plays at once.
+- 💥 **Effects**: shake, zoom beat, glitch, flash, dip to black, B&W strobe, invert, RGB split, dreamy blur, old film, VHS, over a
+  stretch of time on the whole picture (orange row on the timeline: drag, stretch, delete).
+- 🔤 **Text**: font (tiles in the screen's own words), size, weight, outline, colours; for all lyrics or only this screen.
+  ✨ **Colour ideas** are worked out from the picture behind the words (opposite colours, triads, gold, neon ..., only ones that stand
+  out from it); press ♥ to keep a set: saved sets (content/palettes.json) are offered first in every song.
+- ✏️ **Lyrics** / ➕ **Add lyric**: change the words, remove a screen, add one at the playhead.
+- 🖼️ **Pictures**: the pictures of the nearest interlude. 🗑️ **Delete** (or the Delete key): the selected block, whatever it is.
 
-**Timeline**: drag lyric screens, interludes, the cards and the cuts in her video; drag the ends to make them longer or shorter;
-double-click a lyric screen to go back to its automatic time. A removed screen stays as a faint outline: click it to bring it back.
-Drag the lyrics up or down on the picture, or her name anywhere. Space plays and pauses; the arrow keys step a second (Shift: a tenth).
-There are no timing tables any more: step 4 keeps which gaps get pictures and the transition styles.
+**On the picture**: click the words to select that screen (its text style opens on the right); double-click to type the words right on
+the picture; drag them anywhere (only that screen while it is selected, otherwise all lyrics); drag her name anywhere.
+**⛶** on the picture shows it full screen with play, ±5 s, previous/next and a time bar; **Editor full screen** gives the whole editor
+the window.
+
+**Timeline**: drag lyric screens, interludes, cards, effects and the cuts in her video; drag the ends to make them longer or shorter;
+double-click a lyric screen to go back to its automatic time. The diamonds under the pictures are transitions (click to change or
+delete). Deleted interludes, cards and screens stay as faint outlines: click one to bring it back. Space plays and pauses; the arrow
+keys step a second (Shift: a tenth). Step 4 keeps which gaps get pictures and the transition styles; there are no timing tables.
 
 The first time, the page makes a small copy of the video for smooth playback (10 to 40 seconds; the progress shows on the picture).
 How close the preview is to the video is checked automatically:
@@ -52,9 +60,10 @@ How close the preview is to the video is checked automatically:
 .venv/bin/python tools/check_preview.py                                  # every transition, filter and motion against ffmpeg
 .venv/bin/python tools/check_preview_video.py <song> [instagram|youtube|reel]   # the preview against a built video (page running)
 ```
-Measured on both songs: within 1-2 of 255 for transitions and filters, within 1-5 overall for whole frames (with a filtered,
-zooming part of her video, changed and removed lyrics, and two pictures in an interlude); her video is a little softer in the preview
-because it plays the small copy.
+Measured on both songs: within 1-2 of 255 for transitions and filters, within 1-4 overall for whole frames (with a filtered,
+zooming part of her video, changed, removed and restyled lyrics, effects, and two pictures in an interlude); every effect and a
+straight cut were also compared once on a built reel (within 0.1-6). Her video is a little softer in the preview because it plays the
+small copy; the grain of "Old film" and "VHS" is random, so it differs grain by grain.
 
 ## How a video is made
 1. **Lyrics first** (step 2), then **files** (step 3). Needed: the lyrics and a video. Optional: mastered audio (recommended for a long video) and her vocal file.

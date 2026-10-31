@@ -169,7 +169,8 @@ def interlude_parts(it, total, default_motion, between):
         if j:
             d = float(pc.get("trans_seconds") or between["seconds"])
             d = max(0.2, min(d, share * 0.5))
-        out.append(dict(pc, motion=pc.get("motion") or default_motion, tin=(pc.get("trans") or between["name"]) if j else None, din=round(d, 3)))
+        tin = (pc.get("trans") or between["name"]) if j else None
+        out.append(dict(pc, motion=pc.get("motion") or default_motion, tin=tin, din=0.1 if tin == "cut" else round(d, 3)))
     for j, o in enumerate(out):
         o["s"] = 0.0 if j == 0 else round(j * share - o["din"] / 2, 3)
         o["e"] = round(total, 3) if j == n - 1 else round((j + 1) * share + out[j + 1]["din"] / 2, 3)
@@ -208,3 +209,98 @@ def motion_exprs_timed(clips, fps_var="it"):
             e = f"if(between({fps_var},{v['t0']:.3f},{v['t1']:.3f}),{val},{e})"
         return e
     return part("z", 1), f"{part('x', .5)}*(iw-iw/zoom)", f"{part('y', .5)}*(ih-ih/zoom)"
+
+
+# ---------- effects over a stretch of time (shake, flash, glitch ..), on the whole frame; the preview does the same in editor.js ----------
+EFFECTS = {e[0]: {"id": e[0], "label": e[1], "group": e[2]} for e in DEF["effects"]}
+
+
+def rnd(v):
+    """The same pseudo-random number 0..1 as editor.js's rnd()."""
+    r = math.sin(v * 12.9898) * 43758.5453
+    return r - math.floor(r)
+
+
+def glitch_slots(e):
+    """The tenths of a second in which a glitch effect jumps: [(t0, t1, dx share of the width)]."""
+    seed, out = round(e["start"] * 10), []
+    for j in range(int((e["end"] - e["start"]) * 10) + 1):
+        if rnd(j * 7.13 + seed) > 0.6:
+            a = e["start"] + j / 10
+            out.append((a, min(e["end"], a + 0.1), (rnd(j * 3.7 + seed + 1) - 0.5) * 0.06 * e.get("amount", 1)))
+    return out
+
+
+def effect_chain(effects, W, H, a, L, fps=30):
+    """ffmpeg filters for the effects (times on the song, `a` = where this video starts): colour effects first, then the moves.
+    Returns a list of (kind, text): ("f", filters to append) or ("g", a geometric step written as split/move/overlay)."""
+    col, geo = [], []
+    for e in effects:
+        t0, t1 = e["start"] - a, e["end"] - a
+        if t1 <= 0 or t0 >= L:
+            continue
+        k, on, T = float(e.get("amount", 1)), f"enable='between(t,{t0:.3f},{t1:.3f})'", f"(t-{t0:.3f})"
+        ty = e["type"]
+        if ty == "flash":
+            col.append(f"eq=brightness='0.855*0.55*{k}*pow(1-(2*{T}-floor(2*{T})),2)':eval=frame:{on}")
+        elif ty == "dip":
+            col.append(f"eq=brightness='-0.855*{k}*sin(PI*{T}/{max(0.01, t1 - t0):.3f})':eval=frame:{on}")
+        elif ty == "strobe":
+            col.append(f"hue=s='if(mod(floor(8*{T}),2),0,1)':{on}")
+        elif ty == "invert":
+            col.append(f"negate={on}")
+        elif ty == "blur":
+            col.append(f"gblur=sigma={8 * k * W / 1080:.2f}:{on}")
+        elif ty == "rgb":
+            s = max(1, round(10 * k * W / 1080))
+            col.append(f"rgbashift=rh={-s}:bh={s}:{on}")
+        elif ty == "oldfilm":
+            col.append(f"colorchannelmixer=rr=.393:rg=.769:rb=.189:gr=.349:gg=.686:gb=.168:br=.272:bg=.534:bb=.131:{on}")
+            col.append(f"eq=brightness='0.855*0.05*{k}*sin(2*PI*11*{T})*sin(2*PI*3.3*{T}+0.5)':eval=frame:{on}")
+            col.append(f"noise=c0s={round(18 * k)}:c0f=t+u:{on}")
+        elif ty == "vhs":
+            s = max(1, round(5 * k * W / 1080))
+            S = 1.3
+            m = [.213 + .787 * S, .715 - .715 * S, .072 - .072 * S, .213 - .213 * S, .715 + .285 * S, .072 - .072 * S, .213 - .213 * S, .715 - .715 * S, .072 + .928 * S]
+            col.append(f"rgbashift=rh={-s}:bh={s}:{on}")
+            col.append("colorchannelmixer=" + ":".join(f"{n}={v:.4f}" for n, v in zip(("rr", "rg", "rb", "gr", "gg", "gb", "br", "bg", "bb"), m)) + f":{on}")
+            col.append(f"noise=c0s={round(14 * k)}:c0f=t+u:{on}")
+            geo.append(("crop", 1.01, "0", f"0.004*{k}*sin(2*PI*13*{T})", t0, t1))
+        elif ty == "shake":
+            A = 0.012 * k
+            geo.append(("crop", 1 + 2.4 * A, f"{A}*sin(2*PI*9.3*{T})", f"{0.6 * A}*sin(2*PI*7.1*{T}+1)", t0, t1))
+        elif ty == "zoom":
+            geo.append(("zoom", f"1+0.08*{k}*pow(1-(2*(it-{t0:.3f})-floor(2*(it-{t0:.3f}))),3)", t0, t1))
+        elif ty == "glitch":
+            s = max(1, round(16 * k * W / 1080))
+            dxe = "0"
+            for g0, g1, dx in reversed(glitch_slots(e)):
+                g0, g1 = g0 - a, g1 - a
+                col.append(f"rgbashift=rh={-s}:bh={s}:enable='between(t,{g0:.3f},{g1:.3f})'")
+                dxe = f"if(between(t,{g0:.3f},{g1:.3f}),{dx:.4f},{dxe})"
+            geo.append(("crop", 1.04, dxe, "0", t0, t1))
+    return col, geo
+
+
+def effect_graph(effects, W, H, a, L, src, fps=30):
+    """The effects as filter-graph text from label `src`; returns (text, output label) or (None, src) when there are none.
+    A move (shake, zoom, glitch) works on a copy of the frames of its own stretch only, laid back over the video."""
+    col, geo = effect_chain(effects, W, H, a, L, fps)
+    if not col and not geo:
+        return None, src
+    parts, lab = [], src
+    if col:
+        parts.append(f"[{lab}]" + ",".join(col) + "[efc]")
+        lab = "efc"
+    for j, g in enumerate(geo):
+        t0, t1 = max(0.0, g[-2]), min(L, g[-1])
+        cut = f"trim=start={t0:.3f}:end={t1:.3f}"
+        if g[0] == "crop":
+            sc = g[1]
+            SW, SH = int(round(W * sc / 2)) * 2, int(round(H * sc / 2)) * 2
+            mv = f"{cut},scale={SW}:{SH},crop={W}:{H}:x='(iw-ow)/2+({g[2]})*{W}':y='(ih-oh)/2+({g[3]})*{H}'"
+        else:
+            mv = f"{cut},zoompan=z='{g[1]}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s={W}x{H}:fps={fps},setpts=PTS-STARTPTS+{t0:.3f}/TB"
+        parts.append(f"[{lab}]split[efa{j}][efb{j}];[efb{j}]{mv}[efm{j}];[efa{j}][efm{j}]overlay=0:0:eof_action=pass:repeatlast=0[efg{j}]")
+        lab = f"efg{j}"
+    return ";".join(parts), lab

@@ -1,9 +1,8 @@
 {
-  "_about": "Picture filters and picture motions, shared by the video builder (lib/fx.py) and the live preview (lib/fx.js). A filter is a set of adjustments; both sides turn it into the same colour formula, so the preview shows what the video gets.",
+  "_about": "Picture filters and picture motions, shared by the video builder (lib/fx.py) and the live preview (lib/fx.js). A filter is a set of adjustments; both sides turn it into the same colour formula, so the preview shows what the video gets. Effects (shake, flash ..) are drawn over the whole frame for a stretch of time: fx.effect_chain in the builder, edEffects in ui/editor.js.",
   "adjust_keys": {
-    "b": "brightness (1 = unchanged)", "c": "contrast (1 = unchanged)", "s": "saturation (1 = unchanged, 0 = grey)", "h": "hue turn in degrees",
-    "w": "warmth (-1 cool .. 1 warm)", "t": "tint (-1 green .. 1 magenta)", "f": "fade / lifted blacks (0..1)", "sep": "sepia (0..1)", "g": "black and white (0..1)",
-    "v": "vignette, dark corners (0..1)", "n": "film grain (0..1)", "bl": "soft blur (pixels on a 1080-wide frame)"
+    "b": "brightness (1 = unchanged)", "c": "contrast (1 = unchanged)", "s": "saturation (1 = unchanged, 0 = grey)", "h": "hue turn in degrees", "w": "warmth (-1 cool .. 1 warm)", "t": "tint (-1 green .. 1 magenta)",
+    "f": "fade / lifted blacks (0..1)", "sep": "sepia (0..1)", "g": "black and white (0..1)", "v": "vignette, dark corners (0..1)", "n": "film grain (0..1)", "bl": "soft blur (pixels on a 1080-wide frame)"
   },
   "filters": [
     ["original", "Original", "Natural", {}],
@@ -49,5 +48,18 @@
     ["drift_down", "Drift downwards", {"z": [1.14, 1.14], "y": [1, 0]}],
     ["pulse", "Pulse (in and back out)", {"z": [1, 1.08], "ease": "wave"}],
     ["sway", "Gentle sway", {"z": [1.1, 1.1], "x": [0.2, 0.8], "ease": "wave"}]
+  ],
+  "effects": [
+    ["shake", "Shake", "Move"],
+    ["zoom", "Zoom beat", "Move"],
+    ["glitch", "Glitch", "Move"],
+    ["flash", "Flash", "Light"],
+    ["dip", "Dip to black", "Light"],
+    ["strobe", "B&W strobe", "Light"],
+    ["invert", "Invert", "Light"],
+    ["rgb", "RGB split", "Look"],
+    ["blur", "Dreamy blur", "Look"],
+    ["oldfilm", "Old film", "Look"],
+    ["vhs", "VHS", "Look"]
   ]
 }

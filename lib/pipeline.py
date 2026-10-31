@@ -332,10 +332,16 @@ def interludes_for(c, times, dur, min_gap, say=log):
               "din": T["interlude_in"]["seconds"], "dout": T["interlude_out"]["seconds"], "pictures": pics, "n": i + 1}
         room = (it["end"] - it["start"]) / 2 - 0.1
         it["din"], it["dout"] = max(0.2, min(it["din"], room)), max(0.2, min(it["dout"], room))
+        it["din"], it["dout"] = tdur(it["tin"], it["din"]), tdur(it["tout"], it["dout"])
         if len(pics) > 1 and (it["end"] - it["start"]) / len(pics) < 1.5:
             say(f"NOTE interlude {i + 1}: {len(pics)} pictures in {mmss(it['end'] - it['start'])} leaves less than 1.5 s each")
         res.append(it)
     return res
+
+
+def tdur(name, seconds):
+    """A transition's length; "cut" (no transition) is a three-frame fade, seen as a straight cut (one frame is too short for xfade: measured, the picture never came)."""
+    return 0.1 if name == "cut" else seconds
 
 
 def frame_for_cards(c, work, dur):
@@ -399,16 +405,25 @@ def edited_screens(c, screens, times):
         if off.get(str(i)):
             continue
         lines = [x for x in (txt.get(str(i)) or s["lines"]) if x.strip()] or s["lines"]
-        out.append(dict(s, lines=lines, start=t["start"], end=t["end"], i=i, fx_in=an.get(str(i)) or None))
+        out.append(dict(s, lines=lines, start=t["start"], end=t["end"], i=i, fx_in=an.get(str(i)) or None, pos=(conf.get("screen_pos") or {}).get(str(i)), style=style_of((conf.get("screen_style") or {}).get(str(i)))))
     for k, a in enumerate(conf.get("added_screens") or []):
         lines = [x for x in (a.get("lines") or []) if x.strip()]
         if lines and a.get("start") is not None and float(a.get("end") or 0) > float(a["start"]):
-            out.append({"section": "added", "lines": lines, "src": [], "start": float(a["start"]), "end": float(a["end"]), "i": f"a{k}", "fx_in": a.get("anim") or None})
+            out.append({"section": "added", "lines": lines, "src": [], "start": float(a["start"]), "end": float(a["end"]), "i": f"a{k}", "fx_in": a.get("anim") or None, "pos": a.get("pos"), "style": style_of(a.get("style"))})
     out.sort(key=lambda s: s["start"])
     for s, n in zip(out, out[1:]):                       # two screens are never on at once: the earlier one ends as the next begins
         if s["end"] > n["start"] - 0.05:
             s["end"] = max(s["start"] + 0.3, n["start"] - 0.05)
     return out
+
+
+STYLE_KEYS = ("lyrics_font", "lyrics_weight", "lyrics_size", "lyrics_fill_left", "lyrics_fill_mid", "lyrics_fill_right", "lyrics_outline", "lyrics_outline_w", "lyrics_glow")
+
+
+def style_of(st):
+    """A screen's own text style (font, size, colours) set in the preview; only the lyric keys count."""
+    st = {k: v for k, v in (st or {}).items() if k in STYLE_KEYS and v not in (None, "")}
+    return st or None
 
 
 def video_clips(c, dur):
@@ -477,11 +492,11 @@ def output_plan(c, name, mode, rng, B, say=log):
     pics = []
     if oc.get("opening", True) and conf["opening"].get("enabled", True):
         o_end = min(float(conf["opening"].get("seconds") or 6), dur / 3)
-        pics.append({"start": 0.0, "end": o_end, "tin": None, "din": 0, "tout": T["opening_to_video"]["name"], "dout": T["opening_to_video"]["seconds"], "zoom": "card", "kind": "opening",
+        pics.append({"start": 0.0, "end": o_end, "tin": None, "din": 0, "tout": T["opening_to_video"]["name"], "dout": tdur(T["opening_to_video"]["name"], T["opening_to_video"]["seconds"]), "zoom": "card", "kind": "opening",
                      "still": {"kind": "opening", "photo": conf["opening"].get("photo"), "k": kc, "blur": 30 if side else 0}})
     if oc.get("ending", True) and conf["ending"].get("enabled", True):
         e_len = min(float(conf["ending"].get("seconds") or 6), dur / 3)
-        pics.append({"start": dur - e_len, "end": dur, "tin": T["video_to_end"]["name"], "din": T["video_to_end"]["seconds"], "tout": None, "dout": 0, "zoom": "card", "kind": "ending",
+        pics.append({"start": dur - e_len, "end": dur, "tin": T["video_to_end"]["name"], "din": tdur(T["video_to_end"]["name"], T["video_to_end"]["seconds"]), "tout": None, "dout": 0, "zoom": "card", "kind": "ending",
                      "still": {"kind": "ending", "photo": conf["ending"].get("photo"), "k": kc, "photo_h": 0 if side else None}})
     if oc.get("interludes", True):
         between = T.get("picture_to_picture") or cfg.DEFAULT_TRANSITIONS["picture_to_picture"]
@@ -519,6 +534,8 @@ def output_plan(c, name, mode, rng, B, say=log):
         if p_["kind"] in ("opening", "ending") and not (p_["start"] >= clip[0] - 0.01 and p_["end"] <= clip[1] + 0.01):
             say(f"NOTE the {p_['kind']} card ({mmss(p_['start'])}-{mmss(p_['end'])}) is not in this video: it lies outside {mmss(clip[0])}-{mmss(clip[1])}")
     keep = [p for p in keep if p["start"] >= clip[0] - 0.01 and p["end"] <= clip[1] + 0.01]
+    effects = [dict(e, start=float(e["start"]), end=float(e["end"])) for e in (conf.get("effects") or [])
+               if e.get("type") in fx.EFFECTS and e.get("start") is not None and float(e.get("end") or 0) > float(e["start"]) and float(e["end"]) > clip[0] and float(e["start"]) < clip[1]]
     Wfin = int(oc["width"]) // 2 * 2                    # the blurred background, as a share of the width in the final video (render.compose)
     if side:
         b = max(8, int(oc.get("blur", 36) * Wfin / 1920))
@@ -528,7 +545,7 @@ def output_plan(c, name, mode, rng, B, say=log):
     return {"output": name, "label": oc["label"], "size": [W, H], "wl": wl, "canvas": list(canvas), "pw": pw, "layout": layout or {"mode": "portrait"}, "kc": kc, "k": k,
             "clip": [round(clip[0], 3), round(clip[1], 3)], "dur": dur, "fade": float(oc.get("fade") or 0), "look": look,
             "anim": {"in": eff, "out": out_mode}, "screens": sc, "pics": keep, "pre": zoom_pre(wl, H),
-            "logo": {"kind": "logo"}, "bg_blur": round(bg_blur, 5), "video": B["video"]}
+            "logo": {"kind": "logo"}, "bg_blur": round(bg_blur, 5), "video": B["video"], "effects": effects}
 
 
 def video_fx(P, work):
@@ -603,17 +620,20 @@ def build_output(c, name, mode, rng, B, frame, R, src, work, out):
     wl = P["wl"]
     eff, out_mode = P["anim"]["in"], P["anim"]["out"]
     layout = P["layout"] if P["layout"]["mode"] == "side" else None
-    sh = R.Shots(look, pw, canvas)
     sc = P["screens"]
+    sh = R.Shots(look, pw, canvas, extra_fonts={s["style"]["lyrics_font"] for s in sc if s.get("style") and s["style"].get("lyrics_font")})
     log(f"STEP drawing {len(sc)} lyric screens (animation: {eff})")
     for n, s in enumerate(sc):
         din, dout, e = s["din"], s["dout"], s["fx"]
+        lk = dict(look, **(s.get("style") or {}))                  # a screen's own style and place
+        if s.get("pos"):
+            lk.update(lyrics_top=float(s["pos"].get("y", look["lyrics_top"])), lyrics_x=float(s["pos"].get("x", look.get("lyrics_x") or 0)))
         if e in ("fade", "none"):
-            s["png"] = str(sh.png(R.lyric_html(look, s["lines"], sh, k), work / f"png/{name}_L_{n:02d}.png"))
+            s["png"] = str(sh.png(R.lyric_html(lk, s["lines"], sh, k), work / f"png/{name}_L_{n:02d}.png"))
             s["fin"], s["fout"] = (0.02 if e == "none" else round(din, 2)), (0.02 if out_mode == "cut" or e == "none" else round(dout, 2))
         else:
-            lines, size = R.fit_lines(sh, s["lines"], look["lyrics_font"], look["lyrics_weight"], look["lyrics_size"] * k, sh.cw * 0.9, look["lyrics_outline_w"])
-            an = sh.anim_screen(lines, size, look, e, din, dout, out_mode, 30, work / "anim", pw)
+            lines, size = R.fit_lines(sh, s["lines"], lk["lyrics_font"], lk["lyrics_weight"], lk["lyrics_size"] * k, sh.cw * 0.9, lk["lyrics_outline_w"])
+            an = sh.anim_screen(lines, size, lk, e, din, dout, out_mode, 30, work / "anim", pw)
             an.update(din=an["nin"] / 30, dout=an["nout"] / 30)
             s["anim"] = an
     logo = stills.render(sh, still_spec(c, P, P["logo"], frame), work)
@@ -633,7 +653,7 @@ def build_output(c, name, mode, rng, B, frame, R, src, work, out):
     log("STEP putting the video together")
     clip = tuple(P["clip"])
     vfx = video_fx(P, work)
-    R.compose(src, sc, logo, P["pics"], out / f"{name}_{mode}.mp4", (W, H), layout, 30, dur_total=P["dur"], clip=clip, fade=P["fade"], audio=aligned_audio(c, work, P["dur"]), vfx=vfx)
+    R.compose(src, sc, logo, P["pics"], out / f"{name}_{mode}.mp4", (W, H), layout, 30, dur_total=P["dur"], clip=clip, fade=P["fade"], audio=aligned_audio(c, work, P["dur"]), vfx=vfx, effects=P["effects"])
     report = {"output": name, "size": [W, H], "clip": clip, "screens": [{"lines": s["lines"], "start": s["start"], "end": s["end"]} for s in sc],
               "pictures": [{k2: v for k2, v in p.items() if k2 not in ("image",)} for p in P["pics"]]}
     (out / f"{name}_report.json").write_text(json.dumps(report, indent=1, ensure_ascii=False, default=str), encoding="utf-8")

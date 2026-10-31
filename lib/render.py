@@ -37,7 +37,7 @@ def launch(pw):
 class Shots:
     """One headless Chrome page that turns HTML snippets into transparent PNGs."""
 
-    def __init__(self, look, w=720, canvas=(1080, 1920), browser=None):
+    def __init__(self, look, w=720, canvas=(1080, 1920), browser=None, extra_fonts=()):
         """browser: an already running Chrome to open the page in (the settings page keeps one); otherwise one is started."""
         self.own = browser is None
         if self.own:
@@ -48,7 +48,7 @@ class Shots:
         self.cw, self.ch = canvas
         self.w, self.h = w, round(w * self.ch / self.cw)
         self.pg = self.b.new_page(viewport={"width": self.cw, "height": self.ch}, device_scale_factor=w / self.cw)
-        self.pg.set_content(page(look, sorted({look["lyrics_font"], look["logo_font"], look["credits_font"], look["end_font"]}), self.cw, self.ch))
+        self.pg.set_content(page(look, sorted({look["lyrics_font"], look["logo_font"], look["credits_font"], look["end_font"], *extra_fonts}), self.cw, self.ch))
         self.pg.add_script_tag(path=str(Path(__file__).resolve().parent / "anim.js"))
         self.pg.wait_for_timeout(2500)
 
@@ -66,18 +66,18 @@ class Shots:
         style = {"font": f"'{L['lyrics_font']}'", "weight": L["lyrics_weight"], "size": size, "left": L["lyrics_fill_left"], "mid": L["lyrics_fill_mid"],
                  "right": L["lyrics_fill_right"], "outline": L["lyrics_outline"], "ow": L["lyrics_outline_w"], "glow": L["lyrics_glow"], "lh": 1.35}
         nin, nout = max(1, round(din * fps)), (0 if out_mode == "cut" else max(1, round(dout * fps)))
-        key = hashlib.md5(json.dumps([lines, style, effect, nin, nout, out_mode, L["lyrics_top"], self.cw, self.ch, self.w], ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:16]
+        key = hashlib.md5(json.dumps([lines, style, effect, nin, nout, out_mode, L["lyrics_top"], L.get("lyrics_x") or 0, self.cw, self.ch, self.w], ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:16]
         d = Path(base) / key
         res = {"dir": str(d), "nin": nin, "nout": nout, "hold": str(d / "hold.png")}
         if (d / "done").exists():
             return res
         d.mkdir(parents=True, exist_ok=True)
         unit = self.pg.evaluate("n => (Anim.FX[n] || {}).unit || 'block'", effect)
-        self.pg.evaluate("""async ([lines, st, unit, top]) => {
+        self.pg.evaluate("""async ([lines, st, unit, top, x]) => {
             await document.fonts.load(`${st.weight} 40px ${st.font}`, lines.join(' '));
             const c = document.getElementById('c');
-            c.innerHTML = '<div class="blk" style="position:absolute;left:4%;right:4%;top:' + top + '%">' + Anim.html(lines, st, unit) + '</div>';
-            Anim.prepare(c); }""", [lines, style, unit, L["lyrics_top"] * 100])
+            c.innerHTML = '<div class="blk" style="position:absolute;left:' + (4 + x) + '%;right:' + (4 - x) + '%;top:' + top + '%">' + Anim.html(lines, st, unit) + '</div>';
+            Anim.prepare(c); }""", [lines, style, unit, L["lyrics_top"] * 100, float(L.get("lyrics_x") or 0) * 100])
         self.pg.wait_for_timeout(150)
         ctx = {"W": self.cw, "H": self.ch}
         loc = self.pg.locator("#c")
@@ -159,7 +159,8 @@ def lyric_html(look, lines, sh=None, k=1.0):
     size = L["lyrics_size"] * k
     if sh is not None:
         lines, size = fit_lines(sh, lines, L["lyrics_font"], L["lyrics_weight"], size, sh.cw * 0.9, L["lyrics_outline_w"])
-    return (f"<div style=\"position:absolute;left:4%;right:4%;top:{L['lyrics_top'] * 100}%\">"
+    x = float(L.get("lyrics_x") or 0) * 100
+    return (f"<div style=\"position:absolute;left:{4 + x}%;right:{4 - x}%;top:{L['lyrics_top'] * 100}%\">"
             + gtext(lines, L["lyrics_font"], L["lyrics_weight"], size, L["lyrics_fill_left"], L["lyrics_fill_right"],
                     L["lyrics_outline"], L["lyrics_outline_w"], L["lyrics_glow"], L["lyrics_fill_mid"]) + "</div>")
 
@@ -323,7 +324,7 @@ def video_fx_chain(src, vfx, a, L, fps, k):
     return ins, ";".join(parts), k
 
 
-def compose(src, screens, logo_png, pics, out, size, layout=None, fps=30, dur_total=None, clip=None, fade=0.0, audio=None, vfx=None):
+def compose(src, screens, logo_png, pics, out, size, layout=None, fps=30, dur_total=None, clip=None, fade=0.0, audio=None, vfx=None, effects=None):
     """Video + logo + lyric screens, with full-panel pictures (opening card, interlude photos, end card) that come in and go out with their
     own transition (ffmpeg xfade).
 
@@ -332,7 +333,7 @@ def compose(src, screens, logo_png, pics, out, size, layout=None, fps=30, dur_to
             left panel and her video, un-blurred, filling the right panel. Pictures replace the left panel only.
     pics: [{"start","end","image","tin","din","tout","dout","zoom"}]; tin None = starts the video, tout None = ends it.
     clip: (from, to) seconds of the song to build; times are shifted so the cut begins at 0.
-    vfx: filters and motion for clips of her video (pipeline.video_fx), or None."""
+    vfx: filters and motion for clips of her video (pipeline.video_fx), or None.  effects: [{"type", "start", "end", "amount"}] on the song's times."""
     W, H = size
     side = bool(layout and layout.get("mode") == "side")
     wl = layout["wl"] if side else W
@@ -457,6 +458,11 @@ def compose(src, screens, logo_png, pics, out, size, layout=None, fps=30, dur_to
         fc.append(f"[{final}]setsar=1,settb=AVTB[leftp]")
         fc.append("[leftp][right]hstack=inputs=2[hs]")
         final = "hs"
+    if effects:                                       # shake, flash, glitch ..: over the whole frame, text included (fx.effect_graph)
+        eg, lab = fx.effect_graph(effects, W, H, a, L, final, fps)
+        if eg:
+            fc.append(eg)
+            final = lab
     af = []
     if fade and cut or fade and L > 3 * fade:
         fc.append(f"[{final}]fade=t=in:st=0:d={fade},fade=t=out:st={max(0, L - fade):.2f}:d={fade}[vf]")
