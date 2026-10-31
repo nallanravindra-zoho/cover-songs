@@ -55,6 +55,7 @@ DEFAULT_TRANSITIONS = {
     "video_to_end": {"name": "fade", "seconds": 1.0},
     "interlude_in": {"name": "pixelize", "seconds": 0.8},
     "interlude_out": {"name": "fadeblack", "seconds": 0.8},
+    "picture_to_picture": {"name": "fade", "seconds": 0.8},
 }
 # the finished videos: each has its own settings. layout "portrait" = one 9:16 frame; "side" = blurred text panel on the left, her video on the right
 DEFAULT_OUTPUTS = {
@@ -449,6 +450,147 @@ def list_snapshots(name):
     d = song_dir(name) / "snapshots"
     return sorted(f.name for f in d.glob("*.png")) if d.exists() else []
 
+
+# ---------- live preview: the plan of a video, its card pictures, and a small copy of the video ----------
+STILLS = {}                 # (song, key) -> (spec, work, fonts, pw, canvas): what /api/still draws
+SHOT_Q = None
+
+
+def shot_worker():
+    """Playwright must stay on the thread that started it: one thread draws every card picture, keeping a Chrome page per style."""
+    import queue
+    global SHOT_Q
+    SHOT_Q = queue.Queue()
+    sys.path.insert(0, str(HERE / "lib"))
+    import render as R
+    import stills
+    pages = {}
+
+    def run():
+        from playwright.sync_api import sync_playwright
+        browser = R.launch(sync_playwright().start())
+        while True:
+            job, done = SHOT_Q.get()
+            try:
+                spec, work, look, pw, canvas = job
+                fk = (tuple(sorted({look["lyrics_font"], look["logo_font"], look["credits_font"], look["end_font"]})), pw, tuple(canvas))
+                if fk not in pages:
+                    while len(pages) >= 2:
+                        pages.pop(next(iter(pages))).close()
+                    pages[fk] = R.Shots(look, pw, tuple(canvas), browser)
+                done["path"] = stills.render(pages[fk], spec, work)
+            except Exception as e:
+                done["error"] = str(e)
+            done["ev"].set()
+    threading.Thread(target=run, daemon=True).start()
+
+
+def draw_still(name, key):
+    if (name, key) not in STILLS:
+        raise ValueError("this picture is no longer in the plan: refresh the preview")
+    spec, work, look, pw, canvas = STILLS[(name, key)]
+    import stills
+    out = stills.path(spec, work)
+    if out.exists():
+        return out
+    with LOCK:
+        if SHOT_Q is None:
+            shot_worker()
+    done = {"ev": threading.Event()}
+    SHOT_Q.put(((spec, work, look, pw, canvas), done))
+    done["ev"].wait(120)
+    if "error" in done or "path" not in done:
+        raise RuntimeError(done.get("error", "drawing the picture took too long"))
+    return done["path"]
+
+
+def _quiet(fn, *a):
+    try:
+        fn(*a)
+    except Exception:
+        pass
+
+
+def preview_plan(name, data, output):
+    """The plan of one output (lyric screens, cards, interludes and their pictures) from the page's current, possibly unsaved,
+    settings, with a URL for every picture. Uses the saved placement; it never runs the slow analysis."""
+    import pipeline as P
+    import stills
+    if output not in DEFAULT_OUTPUTS:
+        raise ValueError("unknown output")
+    c = read_song(name)
+    c["dir"] = song_dir(name)
+    if data.get("config"):
+        c["config"] = merge(DEFAULT_CONFIG, data["config"])
+    if data.get("credits"):
+        c["credits"] = merge(DEFAULT_CREDITS, data["credits"])
+    if "lyrics" in data:
+        c["lyrics"] = data["lyrics"]
+    per = int(P.look_for(c)["lyrics_lines"])
+    auto = P.cached_auto(c, None, per)
+    if not auto:
+        return {"ready": False, "why": "The lyrics are not placed on the voice yet (or the lyrics changed since): wait for the placement to finish."}
+    work = c["dir"] / "work"
+    dur = P.probe(P.video_path(c))
+    notes = []
+    B = P.song_plan(c, auto, dur, say=lambda m: None)
+    plan = P.output_plan(c, output, "preview", None, B, say=lambda m: notes.append(m) if m.startswith("NOTE") else None)
+    frame = P.frame_for_cards(c, work, dur)
+
+    def url(s):
+        sp = P.still_spec(c, plan, s, frame)
+        k = stills.key(sp)
+        STILLS[(name, k)] = (sp, str(work), plan["look"], plan["pw"], plan["canvas"])
+        if not stills.path(sp, work).exists():                              # start drawing it now, before the page asks
+            threading.Thread(target=lambda: _quiet(draw_still, name, k), daemon=True).start()
+        return f"/api/still?name={name}&key={k}"
+    plan["logo"] = url(plan["logo"])
+    for p in plan["pics"]:
+        if p.get("still"):
+            p["url"] = url(p.pop("still"))
+        for q in p.get("parts", []):
+            if q.get("still"):
+                q["baked"] = q["still"]["kind"] == "panel"
+                q["url"] = url(q.pop("still"))
+            else:
+                q["url"] = f"/media/{name}/photos/{q['photo']}"
+    plan["notes"] = [n[5:] for n in notes]
+    plan["voice"] = auto.get("voice", [])
+    plan["ready"] = True
+    return plan
+
+
+def proxy_state(name):
+    d = song_dir(name) / "work"
+    try:
+        st = json.loads((d / "proxy_status.json").read_text())
+    except Exception:
+        st = {"state": "none"}
+    if st.get("state") == "ready":
+        k = st.get("key")
+        if not (d / f"proxy_{k}.mp4").exists():
+            st = {"state": "none"}
+        else:
+            st["url"] = f"/media/{name}/work/proxy_{k}.mp4"
+            st["peaks"] = f"/media/{name}/work/peaks_{k}.json"
+    if st.get("state") == "working" and not (PROXY.get(name) and PROXY[name].poll() is None):
+        st = {"state": "none"}                         # left over from a server that was stopped mid-way
+    return st
+
+
+PROXY = {}
+
+
+def start_proxy(name):
+    """Start making the preview copy (unless it is being made). The page asks again whenever the video or the master changes."""
+    with LOCK:
+        p = PROXY.get(name)
+        if p and p.poll() is None:
+            return
+        PROXY[name] = subprocess.Popen([sys.executable, str(HERE / "tools" / "make_proxy.py"), str(song_dir(name))], cwd=str(HERE),
+                                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
 # ---------- http ----------
 class H(BaseHTTPRequestHandler):
     server_version = "CoverSongs/1"
@@ -513,8 +655,14 @@ class H(BaseHTTPRequestHandler):
         try:
             if u.path == "/":
                 return self.send_file(UI)
-            if u.path == "/anim.js":
-                return self.send_file(HERE / "lib" / "anim.js")
+            if u.path in ("/anim.js", "/fx.js", "/fx.json"):
+                return self.send_file(HERE / "lib" / u.path[1:])
+            if u.path == "/editor.js":
+                return self.send_file(HERE / "ui" / "editor.js")
+            if u.path == "/api/still":
+                return self.send_file(draw_still(q.get("name"), q.get("key")))
+            if u.path == "/api/proxy":
+                return self.send_json(proxy_state(q.get("name")))
             if u.path == "/api/snapshots":
                 return self.send_json({"files": list_snapshots(q.get("name"))})
             if u.path == "/api/songs":
@@ -573,6 +721,12 @@ class H(BaseHTTPRequestHandler):
                 (song_dir(q["name"]) / "photos").mkdir(exist_ok=True)
                 shutil.copy(src, song_dir(q["name"]) / "photos" / src.name)
                 return self.send_json({"ok": True, "file": src.name})
+            if u.path == "/api/plan":
+                return self.send_json(preview_plan(q["name"], data, q.get("output", "instagram")))
+            if u.path == "/api/proxy":
+                song_dir(q["name"])
+                start_proxy(q["name"])
+                return self.send_json(proxy_state(q["name"]))
             if u.path == "/api/lyric_screens":
                 return self.send_json({"screens": screens(data.get("lyrics", ""), int(data.get("per", 2)), data.get("name"))})
             if u.path == "/api/run":

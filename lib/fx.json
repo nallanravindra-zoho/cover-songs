@@ -1,0 +1,53 @@
+{
+  "_about": "Picture filters and picture motions, shared by the video builder (lib/fx.py) and the live preview (lib/fx.js). A filter is a set of adjustments; both sides turn it into the same colour formula, so the preview shows what the video gets.",
+  "adjust_keys": {
+    "b": "brightness (1 = unchanged)", "c": "contrast (1 = unchanged)", "s": "saturation (1 = unchanged, 0 = grey)", "h": "hue turn in degrees",
+    "w": "warmth (-1 cool .. 1 warm)", "t": "tint (-1 green .. 1 magenta)", "f": "fade / lifted blacks (0..1)", "sep": "sepia (0..1)", "g": "black and white (0..1)",
+    "v": "vignette, dark corners (0..1)", "n": "film grain (0..1)", "bl": "soft blur (pixels on a 1080-wide frame)"
+  },
+  "filters": [
+    ["original", "Original", "Natural", {}],
+    ["bright", "Bright", "Natural", {"b": 1.18, "f": 0.05}],
+    ["vivid", "Vivid", "Natural", {"s": 1.45, "c": 1.12}],
+    ["punch", "Punch", "Natural", {"c": 1.35, "s": 1.2}],
+    ["pop", "Pop", "Natural", {"s": 1.75, "c": 1.2, "b": 1.04}],
+    ["soft", "Soft", "Natural", {"c": 0.88, "b": 1.05, "f": 0.15}],
+    ["warm", "Warm", "Colour", {"w": 0.6, "s": 1.1}],
+    ["golden", "Golden hour", "Colour", {"w": 0.95, "b": 1.06, "s": 1.15}],
+    ["sunset", "Sunset", "Colour", {"w": 1.0, "h": -10, "s": 1.2, "t": 0.2}],
+    ["rose", "Rose", "Colour", {"t": 0.55, "w": 0.25, "b": 1.04}],
+    ["lavender", "Lavender", "Colour", {"h": 25, "t": 0.35, "s": 0.9, "b": 1.04}],
+    ["cool", "Cool", "Colour", {"w": -0.6}],
+    ["ocean", "Ocean", "Colour", {"w": -0.85, "h": 10, "s": 1.1}],
+    ["mint", "Mint", "Colour", {"t": -0.45, "w": -0.2, "b": 1.03}],
+    ["dreamy", "Dreamy", "Mood", {"bl": 3, "b": 1.1, "f": 0.2, "s": 1.1}],
+    ["cinematic", "Cinematic", "Mood", {"c": 1.2, "s": 0.88, "w": -0.15, "f": 0.08, "v": 0.45}],
+    ["moody", "Moody", "Mood", {"b": 0.86, "c": 1.2, "s": 0.75, "v": 0.5}],
+    ["matte", "Matte", "Mood", {"f": 0.5, "c": 0.85, "s": 0.9}],
+    ["fade", "Faded", "Mood", {"f": 0.45, "c": 0.9}],
+    ["vintage", "Vintage", "Film", {"sep": 0.35, "f": 0.3, "c": 0.9, "v": 0.45, "n": 0.25}],
+    ["retro", "Retro", "Film", {"f": 0.35, "w": 0.45, "s": 0.8, "n": 0.35}],
+    ["film", "Film", "Film", {"f": 0.2, "c": 1.05, "s": 0.9, "n": 0.4, "v": 0.3}],
+    ["sepia", "Sepia", "Film", {"sep": 1.0}],
+    ["bw", "Black & white", "Black & white", {"g": 1.0}],
+    ["bw_hi", "B&W contrast", "Black & white", {"g": 1.0, "c": 1.35}],
+    ["noir", "Noir", "Black & white", {"g": 1.0, "c": 1.5, "b": 0.9, "v": 0.6}],
+    ["bw_faded", "Faded B&W", "Black & white", {"g": 1.0, "f": 0.4}]
+  ],
+  "motions": [
+    ["still", "Still", {"z": [1, 1]}],
+    ["zoom_in", "Slow zoom in", {"z": [1, 1.12]}],
+    ["zoom_out", "Slow zoom out", {"z": [1.12, 1]}],
+    ["zoom_in_fast", "Quick zoom in", {"z": [1, 1.3], "ease": "out"}],
+    ["zoom_out_fast", "Quick zoom out", {"z": [1.3, 1], "ease": "out"}],
+    ["zoom_top", "Zoom in towards the top", {"z": [1, 1.2], "y": [0.5, 0]}],
+    ["zoom_left", "Zoom in towards the left", {"z": [1, 1.2], "x": [0.5, 0]}],
+    ["zoom_right", "Zoom in towards the right", {"z": [1, 1.2], "x": [0.5, 1]}],
+    ["drift_left", "Drift to the left", {"z": [1.14, 1.14], "x": [0, 1]}],
+    ["drift_right", "Drift to the right", {"z": [1.14, 1.14], "x": [1, 0]}],
+    ["drift_up", "Drift upwards", {"z": [1.14, 1.14], "y": [0, 1]}],
+    ["drift_down", "Drift downwards", {"z": [1.14, 1.14], "y": [1, 0]}],
+    ["pulse", "Pulse (in and back out)", {"z": [1, 1.08], "ease": "wave"}],
+    ["sway", "Gentle sway", {"z": [1.1, 1.1], "x": [0.2, 0.8], "ease": "wave"}]
+  ]
+}

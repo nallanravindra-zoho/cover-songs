@@ -1,6 +1,6 @@
 # Plan (original plan, with what has since been built)
 
-> **Status (2026-10-31):** all three phases are largely built; see README.md for how it works now. Still open: syncing is done for a separate master audio, but
+> **Status (2026-10-31):** all three phases are largely built, plus a live preview with a drag timeline and several filtered, moving pictures per interlude; see README.md for how it works now. Still open: syncing is done for a separate master audio, but
 > not for a raw video recorded separately from a clean mastered audio without any song in its own sound; cover image + caption export; batch weekly checklist;
 > her confirmed font. Below is the original plan for reference.
 

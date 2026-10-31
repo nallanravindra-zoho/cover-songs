@@ -9,6 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import settings as cfg
 import trans
+import fx
 
 GF = "https://fonts.googleapis.com/css2?family={}&display=swap"
 
@@ -26,16 +27,24 @@ def page(look, fonts, cw=1080, ch=1920):
     return f"<!doctype html><html><head><meta charset=utf-8>{links}<style>html,body{{margin:0;background:transparent}}#c{{width:{cw}px;height:{ch}px;position:relative;overflow:hidden}}</style></head><body><div id=c></div></body></html>"
 
 
+def launch(pw):
+    try:
+        return pw.chromium.launch(channel="chrome", headless=True)
+    except Exception:
+        return pw.chromium.launch(headless=True)
+
+
 class Shots:
     """One headless Chrome page that turns HTML snippets into transparent PNGs."""
 
-    def __init__(self, look, w=720, canvas=(1080, 1920)):
-        from playwright.sync_api import sync_playwright
-        self.pw = sync_playwright().start()
-        try:
-            self.b = self.pw.chromium.launch(channel="chrome", headless=True)
-        except Exception:
-            self.b = self.pw.chromium.launch(headless=True)
+    def __init__(self, look, w=720, canvas=(1080, 1920), browser=None):
+        """browser: an already running Chrome to open the page in (the settings page keeps one); otherwise one is started."""
+        self.own = browser is None
+        if self.own:
+            from playwright.sync_api import sync_playwright
+            self.pw = sync_playwright().start()
+            browser = launch(self.pw)
+        self.b = browser
         self.cw, self.ch = canvas
         self.w, self.h = w, round(w * self.ch / self.cw)
         self.pg = self.b.new_page(viewport={"width": self.cw, "height": self.ch}, device_scale_factor=w / self.cw)
@@ -92,8 +101,11 @@ class Shots:
         return out
 
     def close(self):
-        self.b.close()
-        self.pw.stop()
+        if self.own:
+            self.b.close()
+            self.pw.stop()
+        else:
+            self.pg.close()
 
 
 def _anim_ids():
@@ -265,7 +277,53 @@ def end_html(look, credits, bg, sh=None, language="hindi", k=1.0, photo_h=None):
     return h
 
 
-def compose(src, screens, logo_png, pics, out, size, layout=None, fps=30, dur_total=None, clip=None, fade=0.0, audio=None):
+def video_size(src):
+    """Width and height of a video as it is shown (a phone video's rotation applied)."""
+    r = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height:stream_side_data=rotation",
+                        "-of", "json", str(src)], capture_output=True, text=True)
+    st = json.loads(r.stdout)["streams"][0]
+    rot = next((abs(int(d.get("rotation", 0))) for d in st.get("side_data_list", []) if "rotation" in d), 0)
+    return (st["height"], st["width"]) if rot in (90, 270) else (st["width"], st["height"])
+
+
+def video_fx_chain(src, vfx, a, L, fps, k):
+    """Her video with each clip's filter and motion (pipeline.video_fx): colour table, blur, motion (zoompan, one frame in, one out),
+    vignette and grain, each switched on only during its clip. Returns (extra inputs, filter text ending in [vs], next input number)."""
+    vw, vh = video_size(src)
+    SW, SH = vfx["size"]
+    k2 = max(SW / vw, SH / vh)
+    SW2, SH2 = int(round(vw * k2 / 2)) * 2, int(round(vh * k2 / 2)) * 2
+    ch = f"[0:v]fps={fps},scale={SW2}:{SH2},format=gbrp"
+    clips = []
+    for v in vfx["clips"]:
+        t0, t1 = v["start"] - a, v["end"] - a
+        if t1 <= 0 or t0 >= L:
+            continue
+        clips.append(dict(v, t0=t0, t1=t1))
+        on = f":enable='between(t,{t0:.3f},{t1:.3f})'"
+        if v.get("lut"):
+            ch += f",lut3d=file='{v['lut']}':interp=tetrahedral{on}"
+        if v.get("blur", 0) > 0:
+            ch += f",gblur=sigma={v['blur']:.2f}{on}"
+    if any((v.get("motion") or "still") != "still" for v in clips):
+        z, x, y = fx.motion_exprs_timed(clips)
+        ch += f",zoompan=z='{z}':x='{x}':y='{y}':d=1:s={SW2}x{SH2}:fps={fps}"
+    ins, lab = [], "vx0"
+    ch += f"[{lab}]"
+    parts = [ch]
+    for j, v in enumerate(c for c in clips if c.get("v", 0) > 0):
+        ins += ["-loop", "1", "-framerate", str(fps), "-i", str(fx.vignette_png(SW2, SH2, v["v"], vfx["work"]))]
+        parts.append(f"[{lab}][{k}:v]overlay=0:0:shortest=1:enable='between(t,{v['t0']:.3f},{v['t1']:.3f})'[vx{j + 1}]")
+        lab, k = f"vx{j + 1}", k + 1
+    tail = f"[{lab}]"
+    for v in clips:
+        if v.get("grain", 0) > 0:
+            tail += f"noise=c0s={max(1, round(v['grain'] * 40))}:c0f=t+u:enable='between(t,{v['t0']:.3f},{v['t1']:.3f})',"
+    parts.append(tail + "format=yuv420p[vs]")
+    return ins, ";".join(parts), k
+
+
+def compose(src, screens, logo_png, pics, out, size, layout=None, fps=30, dur_total=None, clip=None, fade=0.0, audio=None, vfx=None):
     """Video + logo + lyric screens, with full-panel pictures (opening card, interlude photos, end card) that come in and go out with their
     own transition (ffmpeg xfade).
 
@@ -273,7 +331,8 @@ def compose(src, screens, logo_png, pics, out, size, layout=None, fps=30, dur_to
     layout: None / {"mode": "portrait"}: one 9:16 frame.  {"mode": "side", "wl": left width, "focus": 0..1, "blur": n}: a blurred, text-carrying
             left panel and her video, un-blurred, filling the right panel. Pictures replace the left panel only.
     pics: [{"start","end","image","tin","din","tout","dout","zoom"}]; tin None = starts the video, tout None = ends it.
-    clip: (from, to) seconds of the song to build; times are shifted so the cut begins at 0."""
+    clip: (from, to) seconds of the song to build; times are shifted so the cut begins at 0.
+    vfx: filters and motion for clips of her video (pipeline.video_fx), or None."""
     W, H = size
     side = bool(layout and layout.get("mode") == "side")
     wl = layout["wl"] if side else W
@@ -292,6 +351,10 @@ def compose(src, screens, logo_png, pics, out, size, layout=None, fps=30, dur_to
               f"[b]scale={wl}:-2[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,fps={fps},format=yuv420p[v0]"]
     fc += ["[1:v]format=rgba[lg]", "[v0][lg]overlay=0:0:shortest=0[v1]"]
     last, k = "v1", 2
+    if vfx:
+        vins, vchain, k = video_fx_chain(src, vfx, a, L, fps, k)
+        ins += vins
+        fc[0] = vchain + ";" + fc[0].replace("[0:v]split", "[vs]split", 1)
     for s in screens:
         an = s.get("anim")
         if not an:
@@ -342,6 +405,32 @@ def compose(src, screens, logo_png, pics, out, size, layout=None, fps=30, dur_to
                 tr = f"trim=start={blk[1]:.3f}" + (f":end={blk[2]:.3f}" if blk[2] else "")
                 fc.append(f"[m{n}]{tr},setpts=PTS-STARTPTS,{norm}[b{bi}]")
                 n += 1
+            elif pics[blk[1]].get("parts"):              # an interlude: one or more prepared pictures, each moving, with transitions between them
+                p = pics[blk[1]]
+                labs = []
+                for j, q in enumerate(p["parts"]):
+                    frames = int(round((q["e"] - q["s"]) * fps)) + 2
+                    z, x, y = fx.zoompan_exprs(q["motion"], frames)
+                    ins += ["-i", str(q["image"])]
+                    chain = f"[{k}:v]zoompan=z='{z}':x='{x}':y='{y}':d={frames}:s={wl}x{H}:fps={fps}"
+                    k += 1
+                    if q.get("vig"):
+                        ins += ["-loop", "1", "-framerate", str(fps), "-i", str(q["vig"])]
+                        chain += f"[zp{bi}_{j}];[zp{bi}_{j}][{k}:v]overlay=0:0:shortest=1"
+                        k += 1
+                    if q.get("grain"):
+                        chain += f",noise=c0s={max(1, round(q['grain'] * 40))}:c0f=t+u"
+                    fc.append(chain + f",{norm}[pp{bi}_{j}]")
+                    labs.append(f"pp{bi}_{j}")
+                cur_p = labs[0]
+                for j in range(1, len(labs)):
+                    q = p["parts"][j]
+                    tname, xtra = trans.xfade_arg(q["tin"])
+                    nxt = f"[b{bi}]" if j == len(labs) - 1 else f"[px{bi}_{j}]"
+                    fc.append(f"[{cur_p}][{labs[j]}]xfade=transition={tname}{xtra}:duration={q['din']}:offset={q['s']:.3f}{nxt}")
+                    cur_p = nxt[1:-1]
+                if len(labs) == 1:
+                    fc.append(f"[{labs[0]}]null[b{bi}]")
             else:
                 p = pics[blk[1]]
                 ins += ["-i", str(p["image"])]

@@ -4,7 +4,7 @@ Steps: vocal recording (separated from the video's sound if not supplied) -> lyr
 screens start and end with the voice -> manual times from the settings page override the automatic ones -> interludes ->
 render with Chrome (text) and ffmpeg (video). Nothing here listens to audio: times are measured.
 """
-import hashlib, json, subprocess, sys
+import hashlib, json, math, subprocess, sys
 from pathlib import Path
 import numpy as np
 
@@ -13,6 +13,7 @@ sys.path.insert(0, str(HERE)); sys.path.insert(0, str(HERE / "lib"))
 import settings as cfg
 import lyrics as ly
 import voice
+import fx
 
 BREAK_GAP = 4.0      # seconds of silence between two lines paired on one screen that makes them separate screens
 SNAP_BACK = 1.5      # a line starts at the first sound of its singing stretch only if that is at most this many seconds before the aligned start
@@ -79,7 +80,8 @@ def voice_source(c):
 
 
 def sig(p):
-    st = Path(p).stat()
+    p = Path(p).resolve()                      # the same file gives the same key whether the song was named as songs/x or by its full path
+    st = p.stat()
     return hashlib.md5(f"{p}|{st.st_size}|{st.st_mtime}".encode()).hexdigest()[:10]
 
 
@@ -306,9 +308,9 @@ def candidate_gaps(times, dur, shortest=4.0):
     return res
 
 
-def interludes_for(c, times, dur, min_gap):
-    """One entry per gap: it gets a picture when it is longer than min_gap seconds, unless the settings say Yes or No for that gap.
-    Each has exactly one transition in and one out (the defaults, or its own)."""
+def interludes_for(c, times, dur, min_gap, say=log):
+    """One entry per gap: it gets pictures when it is longer than min_gap seconds, unless the settings say Yes or No for that gap.
+    Each has one transition in and one out (the defaults, or its own), and one or more pictures that follow each other."""
     T = c["config"]["transitions"]
     ov = c["config"].get("interludes") or []
     res = []
@@ -317,18 +319,21 @@ def interludes_for(c, times, dur, min_gap):
         length = g["gap_to"] - g["gap_from"]
         on = o.get("on") if o.get("on") is not None else length > min_gap
         why = "yes (you set it)" if o.get("on") is True else "no (you set it)" if o.get("on") is False else (f"yes, longer than {mmss(min_gap)}" if on else f"no, not longer than {mmss(min_gap)}")
-        log(f"GAP {i + 1}: {mmss(g['gap_from'])}-{mmss(g['gap_to'])} ({mmss(length)} long) picture: {why}")
+        say(f"GAP {i + 1}: {mmss(g['gap_from'])}-{mmss(g['gap_to'])} ({mmss(length)} long) picture: {why}")
         if not on:
             continue
         st = o["start"] if o.get("start") is not None else g["gap_from"] + 0.6
         en = o["end"] if o.get("end") is not None else g["gap_to"] - 0.6
         if en - st < 1.5:
-            log(f"NOTE gap {i + 1} skipped: the picture would be shorter than 1.5 s")
+            say(f"NOTE gap {i + 1} skipped: the picture would be shorter than 1.5 s")
             continue
+        pics = [dict(x) for x in (o.get("pictures") or []) if isinstance(x, dict)] or [{"photo": o.get("photo") or ""}]
         it = {"start": round(st, 2), "end": round(en, 2), "tin": o.get("tin") or T["interlude_in"]["name"], "tout": o.get("tout") or T["interlude_out"]["name"],
-              "din": T["interlude_in"]["seconds"], "dout": T["interlude_out"]["seconds"], "photo": o.get("photo") or "", "n": i + 1}
+              "din": T["interlude_in"]["seconds"], "dout": T["interlude_out"]["seconds"], "pictures": pics, "n": i + 1}
         room = (it["end"] - it["start"]) / 2 - 0.1
         it["din"], it["dout"] = max(0.2, min(it["din"], room)), max(0.2, min(it["dout"], room))
+        if len(pics) > 1 and (it["end"] - it["start"]) / len(pics) < 1.5:
+            say(f"NOTE interlude {i + 1}: {len(pics)} pictures in {mmss(it['end'] - it['start'])} leaves less than 1.5 s each")
         res.append(it)
     return res
 
@@ -360,46 +365,77 @@ def reel_range(oc, times, screens_n, dur):
     return a, b
 
 
-def build(song, mode, rng=None, outputs=None, cached=False):
-    import render as R
-    c = load_song(song)
-    work = c["dir"] / "work"
-    out = c["dir"] / "out"
-    (work / "png").mkdir(parents=True, exist_ok=True)
-    out.mkdir(exist_ok=True)
+def cached_auto(c, screens, per):
+    """The saved placement, if it still belongs to these lyrics (the preview never starts the slow analysis itself)."""
+    f = c["dir"] / "work" / "auto_times.json"
+    try:
+        d = json.loads(f.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    if d.get("lyr") != lyr_key(c["lyrics"], per):
+        return None
+    n = len(ly.screens(c["lyrics"], per, breaks=set(d.get("breaks", [])))[0])
+    return d if len(d.get("screens", [])) == n else None
+
+
+def song_plan(c, auto, dur, say=log):
+    """What every output shares: the lyric screens with their times and the interludes."""
     look0 = look_for(c)
-    conf, cred = c["config"], c["credits"]
     per = int(look0["lyrics_lines"])
-    screens, flat = ly.screens(c["lyrics"], per)
-    if not screens:
-        raise SystemExit("No lyrics yet: add them in step 3.")
-    auto = auto_times(c, work, screens, flat, force=(mode == "align" and not cached), per=per)
-    screens = ly.screens(c["lyrics"], per, breaks=set(auto.get("breaks", [])))[0]
-    if mode == "align":
-        gaps = candidate_gaps(merged_times(c, screens, auto), probe(video_path(c)))
-        log(f"DONE placed {len(screens)} lyric screens, {len(gaps)} instrumental gaps: " + ", ".join(f"{mmss(g['gap_from'])}-{mmss(g['gap_to'])}" for g in gaps))
-        for w in auto.get("warnings", []):
-            log("WARN " + w)
-        return
-    src = video_path(c)
-    dur = probe(src)
-    times = merged_times(c, screens, auto)
-    for s, t in zip(screens, times):
-        s.update(start=t["start"], end=t["end"])
+    screens = edited_screens(c, ly.screens(c["lyrics"], per, breaks=set(auto.get("breaks", [])))[0], merged_times(c, ly.screens(c["lyrics"], per, breaks=set(auto.get("breaks", [])))[0], auto))
+    times = [{"start": s["start"], "end": s["end"]} for s in screens]
+    IL = interludes_for(c, times, dur, c["config"].get("interlude_min_seconds", 8), say)
+    return {"look0": look0, "screens": screens, "times": times, "IL": IL, "dur": dur, "T": c["config"]["transitions"], "video": video_clips(c, dur)}
+
+
+def edited_screens(c, screens, times):
+    """The lyric screens after the changes made in the preview: new words for a screen (screen_text), a screen taken out
+    (screen_off), screens added at a time of their own (added_screens), and a screen's own animation (screen_anim).
+    Each keeps an id: its number in the lyrics (0, 1, ..) or "a0", "a1", .. for added ones. Sorted by time."""
+    conf = c["config"]
+    txt, off, an = conf.get("screen_text") or {}, conf.get("screen_off") or {}, conf.get("screen_anim") or {}
+    out = []
+    for i, (s, t) in enumerate(zip(screens, times)):
+        if off.get(str(i)):
+            continue
+        lines = [x for x in (txt.get(str(i)) or s["lines"]) if x.strip()] or s["lines"]
+        out.append(dict(s, lines=lines, start=t["start"], end=t["end"], i=i, fx_in=an.get(str(i)) or None))
+    for k, a in enumerate(conf.get("added_screens") or []):
+        lines = [x for x in (a.get("lines") or []) if x.strip()]
+        if lines and a.get("start") is not None and float(a.get("end") or 0) > float(a["start"]):
+            out.append({"section": "added", "lines": lines, "src": [], "start": float(a["start"]), "end": float(a["end"]), "i": f"a{k}", "fx_in": a.get("anim") or None})
+    out.sort(key=lambda s: s["start"])
+    for s, n in zip(out, out[1:]):                       # two screens are never on at once: the earlier one ends as the next begins
+        if s["end"] > n["start"] - 0.05:
+            s["end"] = max(s["start"] + 0.3, n["start"] - 0.05)
+    return out
+
+
+def video_clips(c, dur):
+    """Her video cut into clips at the times in video_clips.cuts; each clip has its own filter and motion (video_clips.fx)."""
+    vc = c["config"].get("video_clips") or {}
+    cuts = sorted(float(x) for x in (vc.get("cuts") or []) if 0 < float(x) < dur)
+    fxs = vc.get("fx") or []
+    edges = [0.0] + cuts + [dur]
+    out = []
+    for k in range(len(edges) - 1):
+        f = dict(fxs[k]) if k < len(fxs) and isinstance(fxs[k], dict) else {}
+        p = fx.params(f)
+        out.append(dict(f, start=round(edges[k], 3), end=round(edges[k + 1], 3), plain=fx.is_plain(f) and (f.get("motion") or "still") == "still", v=round(p["v"], 3), grain=round(p["n"], 3)))
+    return out
+
+
+def zoom_pre(wl, H):
+    """How much larger than the frame a moving picture is prepared, so slow zooms stay smooth."""
+    return 3 if wl * H * 9 < 3e7 else 2
+
+
+def output_plan(c, name, mode, rng, B, say=log):
+    """Everything that decides what one output video looks like and when, without drawing anything. The builder draws it;
+    the live preview in the settings page plays the same plan."""
+    conf = c["config"]
+    dur, screens, times, IL, look0 = B["dur"], B["screens"], B["times"], B["IL"], B["look0"]
     T = conf["transitions"]
-    IL = interludes_for(c, times, dur, conf.get("interlude_min_seconds", 8))
-    frame = frame_for_cards(c, work, dur)
-    names = [n for n in (outputs or [n for n in cfg.DEFAULT_OUTPUTS if output_cfg(conf, n)["enabled"]]) if n in cfg.DEFAULT_OUTPUTS]
-    if not names:
-        raise SystemExit("No output is switched on: tick at least one in step 8.")
-    for name in names:
-        log(f"OUTPUT {name}: {output_cfg(conf, name)['label']}")
-        build_output(c, name, mode, rng, screens, times, IL, dur, look0, frame, T, R, src, work, out)
-    log("DONE " + ", ".join(f"{n}_{mode}.mp4" for n in names))
-
-
-def build_output(c, name, mode, rng, screens, times, IL, dur, look0, frame, T, R, src, work, out):
-    conf, cred = c["config"], c["credits"]
     oc = output_cfg(conf, name)
     look = cfg.merge(look0, oc.get("look") or {})
     side = oc["layout"] == "side"
@@ -415,66 +451,56 @@ def build_output(c, name, mode, rng, screens, times, IL, dur, look0, frame, T, R
     else:
         W = Wf // 2 * 2
         H = round(W * 16 / 9) // 2 * 2
+        wl = W
         canvas, pw, layout, kc = (1080, 1920), W, None, 1.0
     k = oc.get("text_scale", 1.0)
     if name == "reel":                                   # the part of the song this video covers (screens outside it are not drawn)
         clip = reel_range(oc, times, len(screens), dur)
-        log(f"REEL {mmss(clip[0])}-{mmss(clip[1])} ({mmss(clip[1] - clip[0])} long)")
+        say(f"REEL {mmss(clip[0])}-{mmss(clip[1])} ({mmss(clip[1] - clip[0])} long)")
     elif oc.get("start") is not None or oc.get("length"):
         a0 = float(oc.get("start") or 0)
         clip = (a0, min(dur, a0 + float(oc["length"])) if oc.get("length") else dur)
     else:
-        clip = rng if rng else (0.0, dur)
+        clip = tuple(rng) if rng else (0.0, dur)
     ta = cfg.merge(conf.get("text_anim") or {}, {k2: v2 for k2, v2 in (oc.get("text_anim") or {}).items() if v2 not in ("", None)})
+    import render as R
     eff, out_mode = ta.get("in", "fade"), ta.get("out", "reverse")
     if eff not in R.ANIM_FX:
-        log(f"NOTE unknown text animation {eff!r}: fade is used")
+        say(f"NOTE unknown text animation {eff!r}: fade is used")
         eff = "fade"
-    sh = R.Shots(look, pw, canvas)
-    bg = R.data_uri(frame)
-    sc = [dict(s) for s in screens if s["end"] > clip[0] and s["start"] < clip[1]]
-    log(f"STEP drawing {len(sc)} lyric screens (animation: {eff})")
-    for n, s in enumerate(sc):
-        length = s["end"] - s["start"]
-        din, dout = min(float(ta.get("in_seconds", .5)), length * .45), min(float(ta.get("out_seconds", .3)), length * .4)
-        if eff in ("fade", "none"):
-            s["png"] = str(sh.png(R.lyric_html(look, s["lines"], sh, k), work / f"png/{name}_L_{n:02d}.png"))
-            s["fin"], s["fout"] = (0.02 if eff == "none" else round(din, 2)), (0.02 if out_mode == "cut" or eff == "none" else round(dout, 2))
-        else:
-            lines, size = R.fit_lines(sh, s["lines"], look["lyrics_font"], look["lyrics_weight"], look["lyrics_size"] * k, sh.cw * 0.9, look["lyrics_outline_w"])
-            an = sh.anim_screen(lines, size, look, eff, din, dout, out_mode, 30, work / "anim", pw)
-            an.update(din=an["nin"] / 30, dout=an["nout"] / 30)
-            s["anim"] = an
-    logo = sh.png(R.logo_html(look, canvas[0], 1.0), work / f"png/{name}_logo.png")
+    sc = []
+    for s in screens:
+        if s["end"] > clip[0] and s["start"] < clip[1]:
+            length = s["end"] - s["start"]
+            fx_s = s.get("fx_in") if s.get("fx_in") in R.ANIM_FX else eff        # a screen's own animation, else the video's
+            sc.append(dict(s, fx=fx_s, din=round(min(float(ta.get("in_seconds", .5)), length * .45), 3), dout=round(min(float(ta.get("out_seconds", .3)), length * .4), 3)))
     pics = []
-
-    def card_bg(entry):
-        f = entry.get("photo")
-        return R.data_uri(c["dir"] / "photos" / f) if f and (c["dir"] / "photos" / f).exists() else bg
     if oc.get("opening", True) and conf["opening"].get("enabled", True):
         o_end = min(float(conf["opening"].get("seconds") or 6), dur / 3)
-        img = sh.png(R.opening_html(look, cred, conf["language"], card_bg(conf["opening"]), conf.get("title", ""), sh, kc, blur=30 if side else 0), work / f"png/{name}_opening.jpg", transparent=False)
-        pics.append({"start": 0.0, "end": o_end, "image": img, "tin": None, "din": 0, "tout": T["opening_to_video"]["name"], "dout": T["opening_to_video"]["seconds"], "zoom": "card", "kind": "opening"})
+        pics.append({"start": 0.0, "end": o_end, "tin": None, "din": 0, "tout": T["opening_to_video"]["name"], "dout": T["opening_to_video"]["seconds"], "zoom": "card", "kind": "opening",
+                     "still": {"kind": "opening", "photo": conf["opening"].get("photo"), "k": kc, "blur": 30 if side else 0}})
     if oc.get("ending", True) and conf["ending"].get("enabled", True):
         e_len = min(float(conf["ending"].get("seconds") or 6), dur / 3)
-        img = sh.png(R.end_html(look, cred, card_bg(conf["ending"]), sh, conf["language"], kc, 0 if side else None), work / f"png/{name}_ending.jpg", transparent=False)
-        pics.append({"start": dur - e_len, "end": dur, "image": img, "tin": T["video_to_end"]["name"], "din": T["video_to_end"]["seconds"], "tout": None, "dout": 0, "zoom": "card", "kind": "ending"})
+        pics.append({"start": dur - e_len, "end": dur, "tin": T["video_to_end"]["name"], "din": T["video_to_end"]["seconds"], "tout": None, "dout": 0, "zoom": "card", "kind": "ending",
+                     "still": {"kind": "ending", "photo": conf["ending"].get("photo"), "k": kc, "photo_h": 0 if side else None}})
     if oc.get("interludes", True):
+        between = T.get("picture_to_picture") or cfg.DEFAULT_TRANSITIONS["picture_to_picture"]
+        default_motion = conf.get("photo_motion") or "zoom_in"
         for it in IL:
-            n = it["n"]
-            pf = c["dir"] / "photos" / it["photo"] if it["photo"] else None
-            has = bool(pf and pf.exists())
-            if it["photo"] and not has:
-                log(f"NOTE interlude {n}: photo {it['photo']} not found, the default picture is used")
-            hue = (350, 200, 30)[(n - 1) % 3]
-            if side:
-                img = sh.png(R.panel_picture_html(bg, R.data_uri(pf) if has else None, n, hue, canvas[0], canvas[1]), work / f"png/{name}_il{n}.jpg", transparent=False)
-            elif has:
-                img = pf
-            else:
-                img = sh.png(R.placeholder_html(n, hue), work / f"png/{name}_il{n}.jpg", transparent=False)
-            pics.append(dict(it, image=str(img), zoom="interlude", kind="interlude"))
-    sh.close()
+            parts = fx.interlude_parts(it, it["end"] - it["start"], default_motion, between)
+            for j, q in enumerate(parts):
+                hue = (350, 200, 30)[(it["n"] + j - 1) % 3]
+                photo = q.get("photo") or ""
+                has = bool(photo) and (c["dir"] / "photos" / photo).exists()
+                if photo and not has:
+                    say(f"NOTE interlude {it['n']}: photo {photo} not found, the default picture is used")
+                p = fx.params(q)
+                q.update(v=round(p["v"], 3), grain=round(p["n"], 3), photo=photo if has else "", hue=hue)
+                if side:
+                    q["still"] = {"kind": "panel", "photo": photo if has else None, "n": it["n"], "hue": hue, "filter": {k2: q.get(k2) for k2 in ("filter", "amount", "adjust")}}
+                elif not has:
+                    q["still"] = {"kind": "placeholder", "n": it["n"], "hue": hue}
+            pics.append(dict(it, zoom="interlude", kind="interlude", parts=parts))
     pics.sort(key=lambda p: p["start"])
     keep = []                                       # a picture needs room: the video must be on screen between two pictures
     for p in pics:
@@ -487,16 +513,130 @@ def build_output(c, name, mode, rng, screens, times, IL, dur, look0, frame, T, R
         if p["start"] - before >= prev_dout + p["din"] + 0.8 and after - p["end"] >= p["dout"] + 0.8:
             keep.append(p)
         else:
-            log(f"NOTE interlude {mmss(p['start'])}-{mmss(p['end'])} skipped: it overlaps a card or another picture")
+            say(f"NOTE interlude {mmss(p['start'])}-{mmss(p['end'])} skipped: it overlaps a card or another picture")
     keep.sort(key=lambda p: p["start"])
     for p_ in pics:
         if p_["kind"] in ("opening", "ending") and not (p_["start"] >= clip[0] - 0.01 and p_["end"] <= clip[1] + 0.01):
-            log(f"NOTE the {p_['kind']} card ({mmss(p_['start'])}-{mmss(p_['end'])}) is not in this video: it lies outside {mmss(clip[0])}-{mmss(clip[1])}")
+            say(f"NOTE the {p_['kind']} card ({mmss(p_['start'])}-{mmss(p_['end'])}) is not in this video: it lies outside {mmss(clip[0])}-{mmss(clip[1])}")
+    keep = [p for p in keep if p["start"] >= clip[0] - 0.01 and p["end"] <= clip[1] + 0.01]
+    Wfin = int(oc["width"]) // 2 * 2                    # the blurred background, as a share of the width in the final video (render.compose)
+    if side:
+        b = max(8, int(oc.get("blur", 36) * Wfin / 1920))
+        bg_blur = math.sqrt(6 * b * (b + 1) / 3) / (round(Wfin * oc["split"]) // 2 * 2)
+    else:
+        bg_blur = math.sqrt(4 * 24 * 25 / 3) / Wfin
+    return {"output": name, "label": oc["label"], "size": [W, H], "wl": wl, "canvas": list(canvas), "pw": pw, "layout": layout or {"mode": "portrait"}, "kc": kc, "k": k,
+            "clip": [round(clip[0], 3), round(clip[1], 3)], "dur": dur, "fade": float(oc.get("fade") or 0), "look": look,
+            "anim": {"in": eff, "out": out_mode}, "screens": sc, "pics": keep, "pre": zoom_pre(wl, H),
+            "logo": {"kind": "logo"}, "bg_blur": round(bg_blur, 5), "video": B["video"]}
+
+
+def video_fx(P, work):
+    """What the builder needs to give her video its clips' filters and motion: the size her video is worked on, and per clip a
+    colour table (LUT), blur, vignette picture and grain. None when no clip has anything."""
+    clips = [v for v in P["video"] if not v["plain"]]
+    if not clips:
+        return None
+    W, H = P["size"]
+    wl = P["wl"]
+    SW, SH = (wl, H) if P["layout"]["mode"] != "side" else (max(wl, W - wl), H)
+    out = []
+    for v in clips:
+        p = fx.params(v)
+        out.append(dict(v, lut=str(fx.lut_file(p, work / "fx")) if not fx.colour_plain(p) else None, blur=p["bl"] * SW / 1080))
+    return {"size": [SW, SH], "clips": out, "work": str(work / "fx")}
+
+
+def still_spec(c, P, s, frame):
+    """A picture spec from the plan, completed with what it is drawn from (look, credits, background)."""
+    conf = c["config"]
+    sp = dict(s, look=P["look"], canvas=P["canvas"], pw=P["pw"])
+    if s["kind"] in ("opening", "ending"):
+        f = s.get("photo")
+        sp["bg"] = str(c["dir"] / "photos" / f) if f and (c["dir"] / "photos" / f).exists() else str(frame)
+        sp.update(credits=c["credits"], language=conf["language"], title=conf.get("title", ""))
+        sp.pop("photo", None)
+    elif s["kind"] == "panel":
+        sp["bg"] = str(frame)
+        sp["photo"] = str(c["dir"] / "photos" / s["photo"]) if s.get("photo") else None
+    return sp
+
+
+def build(song, mode, rng=None, outputs=None, cached=False):
+    import render as R
+    c = load_song(song)
+    work = c["dir"] / "work"
+    out = c["dir"] / "out"
+    (work / "png").mkdir(parents=True, exist_ok=True)
+    out.mkdir(exist_ok=True)
+    conf = c["config"]
+    per = int(look_for(c)["lyrics_lines"])
+    screens, flat = ly.screens(c["lyrics"], per)
+    if not screens:
+        raise SystemExit("No lyrics yet: add them in step 3.")
+    auto = auto_times(c, work, screens, flat, force=(mode == "align" and not cached), per=per)
+    if mode == "align":
+        screens = ly.screens(c["lyrics"], per, breaks=set(auto.get("breaks", [])))[0]
+        gaps = candidate_gaps(merged_times(c, screens, auto), probe(video_path(c)))
+        log(f"DONE placed {len(screens)} lyric screens, {len(gaps)} instrumental gaps: " + ", ".join(f"{mmss(g['gap_from'])}-{mmss(g['gap_to'])}" for g in gaps))
+        for w in auto.get("warnings", []):
+            log("WARN " + w)
+        return
+    src = video_path(c)
+    dur = probe(src)
+    B = song_plan(c, auto, dur)
+    frame = frame_for_cards(c, work, dur)
+    names = [n for n in (outputs or [n for n in cfg.DEFAULT_OUTPUTS if output_cfg(conf, n)["enabled"]]) if n in cfg.DEFAULT_OUTPUTS]
+    if not names:
+        raise SystemExit("No output is switched on: tick at least one in step 8.")
+    for name in names:
+        log(f"OUTPUT {name}: {output_cfg(conf, name)['label']}")
+        build_output(c, name, mode, rng, B, frame, R, src, work, out)
+    log("DONE " + ", ".join(f"{n}_{mode}.mp4" for n in names))
+
+
+def build_output(c, name, mode, rng, B, frame, R, src, work, out):
+    import stills
+    P = output_plan(c, name, mode, rng, B)
+    look, canvas, pw, k = P["look"], tuple(P["canvas"]), P["pw"], P["k"]
+    W, H = P["size"]
+    wl = P["wl"]
+    eff, out_mode = P["anim"]["in"], P["anim"]["out"]
+    layout = P["layout"] if P["layout"]["mode"] == "side" else None
+    sh = R.Shots(look, pw, canvas)
+    sc = P["screens"]
+    log(f"STEP drawing {len(sc)} lyric screens (animation: {eff})")
+    for n, s in enumerate(sc):
+        din, dout, e = s["din"], s["dout"], s["fx"]
+        if e in ("fade", "none"):
+            s["png"] = str(sh.png(R.lyric_html(look, s["lines"], sh, k), work / f"png/{name}_L_{n:02d}.png"))
+            s["fin"], s["fout"] = (0.02 if e == "none" else round(din, 2)), (0.02 if out_mode == "cut" or e == "none" else round(dout, 2))
+        else:
+            lines, size = R.fit_lines(sh, s["lines"], look["lyrics_font"], look["lyrics_weight"], look["lyrics_size"] * k, sh.cw * 0.9, look["lyrics_outline_w"])
+            an = sh.anim_screen(lines, size, look, e, din, dout, out_mode, 30, work / "anim", pw)
+            an.update(din=an["nin"] / 30, dout=an["nout"] / 30)
+            s["anim"] = an
+    logo = stills.render(sh, still_spec(c, P, P["logo"], frame), work)
+    pre = P["pre"]
+    for p in P["pics"]:
+        if p.get("still"):
+            p["image"] = str(stills.render(sh, still_spec(c, P, p["still"], frame), work))
+        for q in p.get("parts", []):
+            if q.get("still"):
+                base = stills.render(sh, still_spec(c, P, q["still"], frame), work)
+            else:
+                base = c["dir"] / "photos" / q["photo"]
+            colour = None if q.get("still", {}).get("kind") == "panel" else {k2: q.get(k2) for k2 in ("filter", "amount", "adjust")}
+            q["image"] = str(fx.still(base, (wl * pre, H * pre), colour, work / "fx", wl * pre / canvas[0]))
+            q["vig"] = str(fx.vignette_png(wl, H, q["v"], work / "fx")) if q["v"] > 0 else None
+    sh.close()
     log("STEP putting the video together")
-    R.compose(src, sc, logo, keep, out / f"{name}_{mode}.mp4", (W, H), layout, 30, dur_total=dur, clip=clip, fade=float(oc.get("fade") or 0), audio=aligned_audio(c, work, dur))
+    clip = tuple(P["clip"])
+    vfx = video_fx(P, work)
+    R.compose(src, sc, logo, P["pics"], out / f"{name}_{mode}.mp4", (W, H), layout, 30, dur_total=P["dur"], clip=clip, fade=P["fade"], audio=aligned_audio(c, work, P["dur"]), vfx=vfx)
     report = {"output": name, "size": [W, H], "clip": clip, "screens": [{"lines": s["lines"], "start": s["start"], "end": s["end"]} for s in sc],
-              "pictures": [{k2: v for k2, v in p.items() if k2 != "image"} for p in keep]}
+              "pictures": [{k2: v for k2, v in p.items() if k2 not in ("image",)} for p in P["pics"]]}
     (out / f"{name}_report.json").write_text(json.dumps(report, indent=1, ensure_ascii=False, default=str), encoding="utf-8")
-    for p in keep:
-        log(f"PICTURE {p['kind']} {mmss(p['start'])}-{mmss(p['end'])} in:{p['tin']} out:{p['tout']}")
+    for p in P["pics"]:
+        log(f"PICTURE {p['kind']} {mmss(p['start'])}-{mmss(p['end'])} in:{p['tin']} out:{p['tout']}" + (f" ({len(p['parts'])} pictures)" if len(p.get("parts", [])) > 1 else ""))
     log(f"DONE {name}_{mode}.mp4 ({W}x{H})")

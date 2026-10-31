@@ -61,8 +61,41 @@ def _expand(expr):
     return out
 
 
+def _top_split(expr, sep):
+    out, depth, cur = [], 0, ""
+    for ch in expr:
+        depth += {"(": 1, ")": -1}.get(ch, 0)
+        if ch == sep and depth == 0:
+            out.append(cur)
+            cur = ""
+        else:
+            cur += ch
+    return out + [cur]
+
+
+def inline_registers(expr):
+    """xfade runs a custom expression on several threads at once, and st()/ld() memory is shared between them, so stored values
+    get mixed up between pixels (measured: three runs gave three different videos). Write every ld(n) out as the expression that
+    was stored in it, leaving no st()/ld() at all."""
+    reg = {}
+
+    def sub(e):
+        return re.sub(r"ld\((\d+)\)", lambda m: reg[m.group(1)], e)
+    parts = _top_split(expr, ";")
+    for st in parts[:-1]:
+        m = re.fullmatch(r"\s*st\((\d+),(.*)\)\s*", st, re.S)
+        reg[m.group(1)] = "(" + sub(m.group(2)) + ")"
+    return sub(parts[-1])
+
+
+def forward(expr):
+    """The expressions above are written with P running 0 -> 1 (old picture -> new picture), but xfade's P runs 1 -> 0
+    (measured: P*255 gives 255 on the first transition frame). Swap every bare P for (1-P); PI and PLANE are left alone."""
+    return re.sub(r"(?<![A-Za-z_])P(?![A-Za-z_0-9])", "(1-P)", expr)
+
+
 def xfade_arg(name):
     """The value for xfade's transition option, plus any extra option text: ("circleopen", "") or ("custom", ":expr='...'")."""
     if name in CUSTOM:
-        return "custom", ":expr='" + _expand(CUSTOM[name]).replace("'", "") + "'"
+        return "custom", ":expr='" + _expand(forward(inline_registers(CUSTOM[name]))).replace("'", "") + "'"
     return name, ""

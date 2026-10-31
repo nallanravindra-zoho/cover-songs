@@ -33,8 +33,8 @@ h1{margin:0;font-size:29px;font-weight:800}
 .sub{opacity:.92;font-size:15px}
 .song-pick{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .song-pick select{color:var(--ink);min-width:170px}
-.layout{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:225px 1fr;gap:22px;padding:18px 16px 110px}
-@media(max-width:940px){.layout{grid-template-columns:1fr}.steps{position:static!important;flex-direction:row;overflow:auto}}
+.layout{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:225px minmax(0,1fr);gap:22px;padding:18px 16px 110px}
+@media(max-width:940px){.layout{grid-template-columns:minmax(0,1fr)}.steps{position:static!important;flex-direction:row;overflow:auto}}
 .steps{position:sticky;top:14px;align-self:start;display:flex;flex-direction:column;gap:4px;background:linear-gradient(90deg,var(--g1),var(--g2)) top/100% 4px no-repeat,var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:16px 10px 12px}
 .steps a{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;text-decoration:none;color:var(--mute);font-weight:700;font-size:15.5px;white-space:nowrap}
 .steps a b{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--field);border:1px solid var(--line);font-size:13px}
@@ -168,6 +168,53 @@ details.outcard .obody{padding:14px 16px}
 @media(max-width:700px){.two{grid-template-columns:1fr}}
 .cres{display:flex;flex-direction:column;gap:8px}
 .cres .chip{border-radius:12px;font-weight:600;padding:8px 12px}
+/* live preview and timeline */
+.ed{display:grid;grid-template-columns:auto 156px minmax(0,1fr);gap:14px;align-items:start;margin-top:8px}
+@media(max-width:900px){.ed{grid-template-columns:auto 156px}#edPanel{grid-column:1/-1}}
+#edPanel{overflow:auto;padding-right:4px}
+.edtop{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.edtop #edFullBtn{margin-left:auto}
+#edTools{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+#edTools button{display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 2px;font-size:12.5px;border-radius:12px;white-space:normal;line-height:1.15;min-height:58px}
+#edTools button i{font-style:normal;font-size:21px}#edTools button.on{background:var(--grad);color:#fff;border-color:transparent}
+#edPop{position:fixed;right:16px;top:64px;width:min(470px,94vw);max-height:calc(100vh - 84px);overflow:auto;z-index:70;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 60px rgba(60,20,90,.35);padding:0 16px 16px;display:none}
+#edPop.on{display:block}
+.pophead{position:sticky;top:0;background:var(--card);display:flex;align-items:center;gap:10px;padding:12px 0 10px;border-bottom:1px solid var(--line);margin-bottom:10px;z-index:2}
+.pophead>span{flex:1}.pophead b{display:block;font-size:18px}.pophead small{color:var(--mute)}
+.popgrp{font-weight:800;font-size:14px;color:var(--mute);margin:10px 0 6px}
+.poptiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px}
+.ptile{text-align:center;cursor:pointer;border:2px solid transparent;border-radius:12px;padding:3px}.ptile.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.ptile canvas{width:66px;height:117px;border-radius:8px;display:block;margin:0 auto;background:#222}.ptile small{display:block;font-size:12px;line-height:1.2;margin-top:3px}
+.ptile.an .stage{height:62px;border-radius:8px;background:linear-gradient(135deg,#9a917e,#5f584c);position:relative;overflow:hidden}
+.ptile.tr .ph0,.ptile.tr video{width:100%;aspect-ratio:9/16;border-radius:8px;display:grid;place-items:center;background:#111;color:#aaa;font-size:11px;object-fit:cover}
+.moico{width:58px;height:84px;margin:0 auto;border-radius:8px;background:repeating-linear-gradient(45deg,#7a6aa8 0 8px,#9585c4 8px 16px);position:relative;overflow:hidden}
+.moico i{position:absolute;border:2px solid #fff;box-shadow:0 0 0 999px rgba(0,0,0,.45);border-radius:2px}
+#edToast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#1f1a33;color:#fff;padding:10px 16px;border-radius:12px;font-weight:700;opacity:0;transition:opacity .3s;pointer-events:none;z-index:80;max-width:80vw;text-align:center}
+#s0.edfull{position:fixed;inset:0;z-index:50;margin:0;border-radius:0;overflow:auto;padding:10px 18px}
+#s0.edfull>h2{display:none}
+#edLeft{min-width:220px}
+#edPanel{min-width:0}
+#edStage{position:relative;overflow:hidden;border-radius:14px;background:#000;margin:8px 0;touch-action:none;user-select:none}
+#edStage canvas,#edOver,#edFade{position:absolute;left:0;top:0}
+#edBase{width:100%;height:100%}
+#edOver{overflow:hidden;pointer-events:none}
+#edInner{position:absolute;left:0;top:0;transform-origin:0 0;overflow:hidden}
+#edGL{visibility:hidden}
+#edFade{inset:0;background:#000;opacity:0;pointer-events:none;width:100%;height:100%}
+#edMsg{position:absolute;left:10px;right:10px;bottom:10px;background:rgba(20,10,30,.82);color:#fff;border-radius:10px;padding:8px 10px;font-size:14px}
+.edbar{height:7px;border-radius:9px;background:rgba(255,255,255,.25);overflow:hidden;margin:4px 0}.edbar i{display:block;height:100%;background:var(--grad)}
+.edtrans{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+#edTime{font-variant-numeric:tabular-nums;font-weight:800;font-size:17px}
+#edTLWrap{position:relative;overflow-x:auto;overflow-y:hidden;border:1px solid var(--line);border-radius:12px;background:var(--field);margin-top:12px}
+#edTL{position:sticky;left:0;display:block;touch-action:none}
+#edTLSpace{height:1px}
+.edlines{font-size:21px;line-height:1.45;background:var(--field);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.edpic{border:1px solid var(--line);border-radius:14px;padding:10px;margin-top:10px;background:var(--field)}
+.edthumb{width:90px;height:160px;border-radius:9px;background:#000;flex:none}
+details.edfx{margin-top:8px}details.edfx>summary{cursor:pointer;font-size:15px}
+.edfilters{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px;margin-top:8px}
+.edf{text-align:center;cursor:pointer;border:2px solid transparent;border-radius:10px;padding:3px}.edf.on{border-color:var(--accent)}
+.edf canvas{width:54px;height:96px;border-radius:7px;display:block;margin:0 auto;background:#222}.edf small{font-size:11.5px;display:block;line-height:1.2;margin-top:2px}
+#edNotes{color:var(--warn);font-size:14px;margin-top:6px}
 </style>
 </head>
 <body>
@@ -182,10 +229,11 @@ details.outcard .obody{padding:14px 16px}
 
 <div class="layout">
 <nav class="steps" id="steps">
+  <a href="#s0"><b>▶</b>Preview &amp; edit</a>
   <a href="#s1" class="on"><b>1</b>Song</a>
   <a href="#s3"><b>2</b>Lyrics</a>
   <a href="#s2"><b>3</b>Files</a>
-  <a href="#s4"><b>4</b>Timings &amp; transitions</a>
+  <a href="#s4"><b>4</b>Interludes &amp; transitions</a>
   <a href="#s5"><b>5</b>Photos</a>
   <a href="#s6"><b>6</b>Look &amp; fonts</a>
   <a href="#s7"><b>7</b>Credits &amp; cards</a>
@@ -199,6 +247,38 @@ details.outcard .obody{padding:14px 16px}
   <div id="statusDyn"></div>
   <div class="row" style="margin-top:10px"><label class="switch"><input type="checkbox" data-path="config.auto_place"> Place the lyrics on the voice automatically once the lyrics and the video are both in</label></div>
 </div>
+
+<section class="card" id="s0">
+  <h2><span class="n">▶</span>Preview &amp; edit <span id="i0"></span></h2>
+  <div class="edtop"><div class="row" id="edOuts"></div><span class="hint" style="margin:0">Everything you change shows here at once.</span><button class="small" id="edFullBtn" onclick="edFull()">⛶ Full screen</button></div>
+  <div class="ed">
+    <div id="edLeft">
+      <div id="edStage"><canvas id="edBase"></canvas><div id="edOver"><div id="edInner"><div id="edLogo"></div><div id="edLyr" style="position:absolute;inset:0"></div></div></div><canvas id="edGL"></canvas><div id="edFade"></div><div id="edMsg"></div></div>
+      <video id="edVid" playsinline preload="auto" style="display:none"></video>
+      <svg width="0" height="0" style="position:absolute"><filter id="edDim" color-interpolation-filters="sRGB"><feComponentTransfer>
+        <feFuncR type="linear" slope="1" intercept="-0.29"/><feFuncG type="linear" slope="1" intercept="-0.29"/><feFuncB type="linear" slope="1" intercept="-0.29"/></feComponentTransfer></filter></svg>
+      <div class="edtrans"><button class="small" onclick="edJump(-1)" title="Previous screen or picture">⏮</button><button class="primary" id="edPlay" onclick="edPlay()" style="min-width:104px">▶ Play</button><button class="small" onclick="edJump(1)" title="Next screen or picture">⏭</button><span id="edTime">0:00</span></div>
+      <div id="edNotes"></div>
+    </div>
+    <div id="edTools">
+      <button data-k="split" onclick="edSplit()" title="Cut her video at the playhead into two parts"><i>✂️</i>Split</button>
+      <button data-k="filter" onclick="edPop('filter')" title="Filter for what is under the playhead"><i>🎨</i>Filter</button>
+      <button data-k="motion" onclick="edPop('motion')" title="Motion of her video or the picture under the playhead"><i>🎥</i>Motion</button>
+      <button data-k="anim" onclick="edPop('anim')" title="How the lyric screen comes in and goes out"><i>✨</i>Lyric anim.</button>
+      <button data-k="trans" onclick="edPop('trans')" title="The transition nearest the playhead"><i>🔀</i>Transition</button>
+      <button data-k="text" onclick="edPop('text')" title="Font, colours and size of the lyrics"><i>🔤</i>Text</button>
+      <button data-k="edit" onclick="edEditHere()" title="Change the words of the lyric screen under the playhead, or remove it"><i>✏️</i>Lyrics</button>
+      <button data-k="add" onclick="edAddScreen()" title="A new lyric screen at the playhead"><i>➕</i>Add lyric</button>
+      <button data-k="pics" onclick="edPicsHere()" title="The pictures of the interlude near the playhead"><i>🖼️</i>Pictures</button>
+    </div>
+    <div id="edPanel"></div>
+  </div>
+  <div class="row" style="margin-top:10px"><b>Timeline</b><button class="small" onclick="edZoom(0.67)">− Zoom out</button><button class="small" onclick="edZoom(1.5)">+ Zoom in</button><button class="small" onclick="edFit()">Whole song</button>
+    <span class="hint" style="margin:0" title="Blue: parts of her video. Purple: lyrics (orange: moved, pink: added). Teal: interludes. Orange: cards.">Drag blocks and their ends.</span></div>
+  <div id="edTLWrap"><canvas id="edTL"></canvas><div id="edTLSpace"></div></div>
+  <div id="edPop"><div class="pophead"><span id="edPopHead"></span><button class="small" onclick="edPopClose()">Done ✓</button></div><div id="edPopBody"></div></div>
+  <div id="edToast"></div>
+</section>
 
 <section class="card" id="s1">
   <h2><span class="n">1</span>Song <span id="i1"></span></h2>
@@ -234,38 +314,11 @@ details.outcard .obody{padding:14px 16px}
 </section>
 
 <section class="card" id="s4">
-  <h2><span class="n">4</span>Timings &amp; transitions <span id="i4"></span></h2>
-  <p class="hint">Play the song, see its shape, and set when each lyric screen appears and where each part and interlude starts and ends.</p>
-  <div class="row" style="margin-bottom:10px">
-    <label class="l" style="margin:0">Play</label>
-    <select id="auSrc" onchange="loadAudio()"><option value="master">Mastered audio</option><option value="vocal">Vocal recording</option></select>
-    <label class="l" style="margin:0 0 0 8px">Speed</label>
-    <select id="auRate" onchange="au.playbackRate=+this.value"><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option></select>
-    <label class="l" style="margin:0 0 0 8px">Zoom</label>
-    <select id="tlZoom" onchange="drawTimeline()"><option value="1">1×</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option></select>
-  </div>
-  <audio id="au" controls style="width:100%"></audio>
-  <div class="timeline" id="tlWrap" style="margin-top:10px"><canvas id="tl" height="150"></canvas></div>
-  <div class="hint" id="tlHint" style="margin-top:6px">Click the picture to jump. Green strip: where the voice is. Purple bars: lyric screens (orange if you typed the time). Teal bands: interludes.</div>
-
-  <h3>Tap along to time the lyrics <span id="iTap"></span></h3>
-  <div class="tapbox" id="tapbox">
-    <div id="tapState" style="opacity:.8">Tap mode is off.</div>
-    <div class="nx" id="tapNext">—</div>
-    <div class="row">
-      <button class="primary" onclick="tapStart()">▶ Start tapping</button>
-      <button onclick="tapHit()">TAP (or press Space)</button>
-      <button onclick="tapBack()">⌫ Undo last</button>
-      <button onclick="tapStop()">■ Stop</button>
-      <span style="opacity:.8">Reaction allowance</span>
-      <input type="number" step="0.05" value="-0.15" id="tapOff" style="width:90px"><span style="opacity:.8">s</span>
-    </div>
-  </div>
-  <div class="row" style="margin-top:14px"><button class="teal" onclick="autoPlace()">Auto-place lyrics from the voice</button>
-    <button onclick="useAutoTimes()">Copy automatic times into the table</button><button onclick="clearTimes()">Clear typed times</button><span id="iAuto"></span></div>
+  <h2><span class="n">4</span>Interludes &amp; transitions <span id="i4"></span></h2>
+  <p class="hint">The lyrics are placed on her voice automatically. Change any time on the timeline in <b>Preview &amp; edit</b> (drag the blocks). Here: which instrumental gaps get pictures, and the transitions.</p>
+  <div class="row"><button class="teal" onclick="autoPlace()">Place the lyrics on the voice again</button><button onclick="clearTimes()">Undo all moved lyric times</button><span id="iAuto"></span></div>
   <div class="hint" id="autoMsg" style="margin:6px 0 10px"></div>
   <div id="autoWarn"></div>
-  <div id="screens"></div>
 
   <h3>Interludes and their transitions <span id="iDet"></span></h3>
   <p class="hint">Found automatically from the gaps in the singing (change the gap length in step 5). The list updates as you change the lyric times, the gap, or the styles. Pick a transition for any interlude, or leave it on automatic.</p>
@@ -451,10 +504,11 @@ details.outcard .obody{padding:14px 16px}
 <div class="float"><span id="busy" class="chip warn hidden"></span><span id="saveState" class="saved">Saved</span><button class="primary" onclick="save()">Save</button></div>
 
 <script src="/anim.js"></script>
+<script src="/fx.js"></script>
 <script>
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-const au = $('#au');
+const au = $('#au') || document.createElement('audio');   // the old player is gone; kept so older code paths stay harmless
 let S = null;               // {name, config, credits, lyrics, photos, files}
 let dirty = false, presets = {}, backdropUrl = null, peaks = null, peaksFor = '', tapIdx = null, tapOn = false;
 
@@ -497,7 +551,7 @@ function fillFontSelects(){
 const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function get(path){return path.split('.').reduce((o,k)=>o==null?o:o[k],S);}
 function set(path,v){const ks=path.split('.');const last=ks.pop();const o=ks.reduce((o,k)=>o[k],S);o[last]=v;}
-function mark(){dirty=true;if(typeof refreshSummaries==='function')refreshSummaries();$('#saveState').textContent='Not saved';$('#saveState').className='dirty';}
+function mark(){dirty=true;if(typeof refreshSummaries==='function')refreshSummaries();if(typeof edRefreshSoon==='function')edRefreshSoon();$('#saveState').textContent='Not saved';$('#saveState').className='dirty';}
 function fmt(t){if(t==null||t==='')return '';const r=Math.round(+t*10)/10,m=Math.floor(r/60),sec=r-m*60,whole=Math.floor(sec+1e-9),tenth=Math.round((sec-whole)*10);return m+':'+String(whole).padStart(2,'0')+(tenth?'.'+tenth:'');}
 function parseTime(x){   // "3:12.6", "3:12", "1:03:12" or plain seconds -> seconds; empty -> null; unreadable -> NaN
   if(x==null)return null;x=String(x).trim().replace(',','.');if(x==='')return null;
@@ -512,6 +566,7 @@ async function api(url,opt){const r=await fetch(url,opt);const j=await r.json();
 function toast(msg){const s=$('#saveState');s.textContent=msg;s.className='dirty';}
 
 const HELP={
+ i0:'The preview is drawn in your browser from the same plan the video maker uses: the same lyric times and animations, the cards drawn by the same code, and the picture filters, motions and transitions checked against the video maker frame by frame (tools/check_preview.py). One small difference: lyrics on screen while a transition between her video and a picture runs are not part of the transition in the preview (lyrics are normally not on screen then). Space plays and pauses; the arrow keys step a second (with Shift a tenth). Make the real video in step 8 when it looks right.',
  i1:'A song is one folder in <b>songs/</b> with the raw files and three settings files. A saved look keeps fonts, colours, sizes and transitions so next week\'s song can start from the same style.',
  iLang:'Decides which fonts are offered for lyrics and credits, and the words in front of credits (సినిమా / फ़िल्म and so on).',
  iPre:'<b>house</b> is the look measured from her Srikaramagu video. Choose a look and press Use to copy its fonts, colours and transitions into this song. Save your own under a new name.',
@@ -519,7 +574,7 @@ const HELP={
  iSync:'<b>Automatic</b> works when the song was playing out loud when she recorded, so the raw video\'s sound contains it. If she used earphones, use <b>clap</b> (a clap or beep at the start) or type the offset: how many seconds into the raw video the master starts.',
  i3:'Each screen shows up to the chosen number of lines. A part that comes back, like the pallavi, is typed once and repeated in the <b>[order]</b> line, for example <i>pallavi, charanam 1, pallavi, charanam 2, pallavi</i>.',
  i4:'The timings are what make the lyrics appear at the right moment. Times are seconds from the start of the mastered audio.',
- iTap:'Press Start, then press Space (or the TAP button) at the moment each lyric screen should appear. A small reaction allowance (default −0.15 s) moves each tap a little earlier because people tap slightly late. Slow the speed to 0.75× if it is hard. You can fix any single time in the table afterwards. This is exact, but it is you measuring: nothing here listens to the singing.',
+ iTapX:'Press Start, then press Space (or the TAP button) at the moment each lyric screen should appear. A small reaction allowance (default −0.15 s) moves each tap a little earlier because people tap slightly late. Slow the speed to 0.75× if it is hard. You can fix any single time in the table afterwards. This is exact, but it is you measuring: nothing here listens to the singing.',
  iSec:'<b>Part with her video</b> = her video plays. <b>Interlude</b> = a photo plays. <b>Opening card / End card</b> = the credit cards. Use "now" to copy the player\'s current time.',
  iMinGap:'Gaps between lyric lines shorter than this get no photo and no transition: the video just carries on with the lyrics. The default is 8; raise it to get fewer interludes, lower it to get more.',
  i5:'Pictures for interludes, the opening card and the end card. Where each picture is used is set under its thumbnail.',
@@ -567,6 +622,7 @@ function renderAll(){
   fillFontSelects(); fillPhotoSelects(); renderFiles(); renderPhotos(); AUTO={}; SCR=[]; refreshScreens(true).then(loadAuto).then(()=>{if(window._songLoaded!==S.name){window._songLoaded=S.name;openInitial();autoKeyDone=autoValid()?autoKey():null;scheduleAuto();}}); renderSections(); syncTransitionView(); renderSlots(); renderLabels();
   $('#extraLines').value=(S.credits.ending.extra_lines||[]).join('\n');
   loadAudio(); updateBackdrop(); updatePreviews(); drawTimeline(); renderStyle(); renderAnim();
+  if(typeof edOpen==='function'&&$('#s0').classList.contains('open'))edOpen();
 }
 function bind(el){
   const v=get(el.dataset.path);
@@ -709,7 +765,7 @@ function renderScreens(){
     <td>${tinp('config.lyric_ends.'+i,a?a.end:null)} <button class="small" onclick="setNow('config.lyric_ends.${i}')">now</button></td>
     <td><button class="small" onclick="playFrom(${effTimes(i).start??0})">▶</button></td></tr>`;}).join('');
   const pager=spages>1?`<div class="pager"><button class="small" ${scrPage===0?'disabled':''} onclick="scrPage--;renderScreens()">‹ Previous 10</button><b>Screens ${scrPage*SP+1}–${Math.min(screens.length,scrPage*SP+SP)} of ${screens.length}</b><button class="small" ${scrPage>=spages-1?'disabled':''} onclick="scrPage++;renderScreens()">Next 10 ›</button></div>`:'';
-  $('#screens').innerHTML=screens.length?`<table class="t"><tr><th>#</th><th>Lyric screen</th><th>Appears at (min:sec)</th><th>Disappears at (min:sec)</th><th></th></tr>${rows}</table>${pager}`+
+  if($('#screens'))$('#screens').innerHTML=screens.length?`<table class="t"><tr><th>#</th><th>Lyric screen</th><th>Appears at (min:sec)</th><th>Disappears at (min:sec)</th><th></th></tr>${rows}</table>${pager}`+
     `<div class="hint" style="margin-top:6px">Grey numbers are the automatic times (from where the voice is). Leave a box empty to keep the automatic time; type a number to override it.</div>`+
     (extra>0?`<div class="chip warn" style="margin-top:8px">${extra} extra times from older lyrics <button class="small" onclick="trimTimes()">Remove them</button></div>`:''):
     '<div class="hint">Type the lyrics in step 2 first.</div>';
@@ -727,7 +783,7 @@ async function loadAuto(){try{AUTO=await api('/api/auto_times?name='+encodeURICo
 
 // ---------- tap along ----------
 function tapShow(){
-  const {screens}=screensOf();const nx=$('#tapNext');
+  const {screens}=screensOf();const nx=$('#tapNext');if(!nx)return;
   if(!screens.length){nx.textContent='—';return;}
   if(tapIdx==null)tapIdx=Math.max(0,S.config.lyric_times.findIndex(t=>t==null));
   if(tapIdx<0)tapIdx=0;
@@ -783,6 +839,7 @@ function delSection(i){S.config.sections.splice(i,1);mark();renderSections();dra
 
 // ---------- audio + timeline ----------
 function loadAudio(){
+  if(!$('#auSrc'))return;
   const k=$('#auSrc').value;let f=S.files[k];if(!(f&&f.exists)&&S.files.raw_video&&S.files.raw_video.exists)f=S.files.raw_video;   // no audio file yet: use the video's own sound
   if(f&&f.exists){const src=`/media/${S.name}/${encodeURIComponent(f.file)}?v=${f.size}`;if(au.getAttribute('data-src')!==src){au.setAttribute('data-src',src);au.src=src;au.playbackRate=+$('#auRate').value;peaks=null;loadPeaks(src);}}
   else{au.removeAttribute('src');au.removeAttribute('data-src');peaks=null;drawTimeline();}
@@ -817,7 +874,7 @@ function drawTimeline(){
   for(let t=0;t<dur;t+=(z>=4?5:z>=2?10:30)){c.fillStyle=cs.color;c.globalAlpha=.4;c.fillRect(X(t),0,1,6);c.globalAlpha=1;c.font='11px Manrope,sans-serif';c.fillText(fmt(t),X(t)+3,24>H?24:46);}
   c.fillStyle='#ff2d6f';c.fillRect(X(au.currentTime||0),0,2,H);
 }
-$('#tl').addEventListener('click',ev=>{const r=ev.target.getBoundingClientRect();const dur=(peaks&&peaks.dur)||au.duration||0;if(!dur)return;au.currentTime=(ev.clientX-r.left)/r.width*dur;drawTimeline();});
+if($('#tl'))$('#tl').addEventListener('click',ev=>{const r=ev.target.getBoundingClientRect();const dur=(peaks&&peaks.dur)||au.duration||0;if(!dur)return;au.currentTime=(ev.clientX-r.left)/r.width*dur;drawTimeline();});
 au.addEventListener('timeupdate',()=>{drawTimeline();const w=$('#tlWrap'),dur=au.duration||0;if(dur&&!au.paused){const x=au.currentTime/dur*$('#tl').width;if(x>w.scrollLeft+w.clientWidth-40||x<w.scrollLeft)w.scrollLeft=Math.max(0,x-60);}});
 au.addEventListener('loadedmetadata',drawTimeline);
 window.addEventListener('resize',drawTimeline);
@@ -837,13 +894,13 @@ function renderPhotos(){
 function photoUse(sel){return;const f=sel.dataset.photo;if(sel.value==='none')delete S.config.photo_use[f];else S.config.photo_use[f]=sel.value;
   if(sel.value==='opening')S.config.opening.photo=f;if(sel.value==='ending')S.config.ending.photo=f;mark();fillPhotoSelects();updatePreviews();}
 async function delPhoto(f){if(!confirm('Remove '+f+'?'))return;await api(`/api/delete_file?name=${S.name}&kind=photo&file=${encodeURIComponent(f)}`,{method:'POST',body:'{}'});
-  S.photos=S.photos.filter(x=>x!==f);(S.config.interludes||[]).forEach(o=>{if(o&&o.photo===f)delete o.photo;});if(S.config.opening.photo===f)S.config.opening.photo=null;if(S.config.ending.photo===f)S.config.ending.photo=null;mark();renderPhotos();fillPhotoSelects();updatePreviews();}
+  S.photos=S.photos.filter(x=>x!==f);(S.config.interludes||[]).forEach(o=>{if(o&&o.photo===f)delete o.photo;(o&&o.pictures||[]).forEach(q=>{if(q.photo===f)q.photo='';});});if(S.config.opening.photo===f)S.config.opening.photo=null;if(S.config.ending.photo===f)S.config.ending.photo=null;mark();renderPhotos();fillPhotoSelects();updatePreviews();}
 function fillPhotoSelects(){
   $$('.photoSel').forEach(sel=>{sel.innerHTML='<option value="">(use a frame of her video)</option>'+S.photos.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('');sel.value=get(sel.dataset.path)||'';});
 }
 
 // ---------- transitions ----------
-const SLOT_LABEL={opening_to_video:['Opening card → her video','How the opening card gives way to the video'],interlude_in:['Default: going INTO an interlude picture','Used for every interlude unless you pick another one for it in the table above'],interlude_out:['Default: coming OUT of an interlude picture','Used for every interlude unless you pick another one for it in the table above'],video_to_end:['Her video → end card','How the video gives way to the end card']};
+const SLOT_LABEL={opening_to_video:['Opening card → her video','How the opening card gives way to the video'],interlude_in:['Default: going INTO an interlude picture','Used for every interlude unless you pick another one for it in the table above'],interlude_out:['Default: coming OUT of an interlude picture','Used for every interlude unless you pick another one for it in the table above'],video_to_end:['Her video → end card','How the video gives way to the end card'],picture_to_picture:['Between two pictures in one interlude','Used when an interlude has several pictures, unless you pick another one for a picture']};
 const TREND=['glitchrows','glitchblocks','mosaic','whipleft','whipright','whipup','zoomthrough','zoomout','flash','ripple','diamond','barslide','blindsv','blindsh','checker','pixelize','hblur','zoomin','distance','radial','circleopen','fadewhite','smoothleft','hlslice'];
 const TLIST=[...TREND.filter(n=>!['pixelize','hblur','zoomin','distance','radial','circleopen','fadewhite','smoothleft','hlslice'].includes(n)),'fade','fadeblack','fadewhite','fadegrays','fadefast','fadeslow','dissolve','pixelize','hblur','distance','radial','circleopen','circleclose','circlecrop','rectcrop','vertopen','vertclose','horzopen','horzclose','zoomin','squeezeh','squeezev',
  'wipeleft','wiperight','wipeup','wipedown','wipetl','wipetr','wipebl','wipebr','slideleft','slideright','slideup','slidedown','smoothleft','smoothright','smoothup','smoothdown',
@@ -951,12 +1008,13 @@ init();
 function songSeconds(){return (AUTO&&AUTO.seconds)||(S.files.raw_video&&S.files.raw_video.seconds)||(S.files.master&&S.files.master.seconds)||0;}
 function candidateGaps(){
   const min=+S.config.interlude_min_seconds||0,dur=songSeconds(),T=S.config.transitions,ov=S.config.interludes||[];
-  const ts=SCR.map((_,i)=>effTimes(i));if(!ts.length||ts.some(t=>t.start==null))return null;
+  if(!SCR.length||SCR.some((_,i)=>effTimes(i).start==null))return null;
+  const ts=typeof edScreens==='function'?edScreens(false):SCR.map((_,i)=>effTimes(i));if(!ts.length)return null;
   const gaps=[];let prev=0;
   ts.concat([{start:dur,end:dur}]).forEach(t=>{if(t.start-prev>4)gaps.push({gap_from:prev,gap_to:t.start});prev=Math.max(prev,t.end==null?t.start:t.end);});
   return gaps.map((g,i)=>{const o=ov[i]||{},len=g.gap_to-g.gap_from,auto=len>min,on=o.on!=null?o.on:auto;
     return {i,...g,len,on,mode:o.on==null?'auto':(o.on?'yes':'no'),auto,start:o.start!=null?o.start:+(g.gap_from+0.6).toFixed(2),end:o.end!=null?o.end:+(g.gap_to-0.6).toFixed(2),
-      tin:o.tin||T.interlude_in.name,tout:o.tout||T.interlude_out.name,ov_in:o.tin||'',ov_out:o.tout||'',photo:o.photo||'',ov_start:o.start,ov_end:o.end};});
+      tin:o.tin||T.interlude_in.name,tout:o.tout||T.interlude_out.name,ov_in:o.tin||'',ov_out:o.tout||'',photo:(o.pictures&&o.pictures[0]?o.pictures[0].photo:o.photo)||'',npics:(o.pictures||[]).length||1,ov_start:o.start,ov_end:o.end};});
 }
 function detectedInterludes(){return (candidateGaps()||[]).filter(g=>g.on);}
 const PH_HUE=[350,200,30];
@@ -964,6 +1022,7 @@ function defaultCard(n,w){return `<div style="width:${w||70}px;aspect-ratio:9/16
 function thumb(g,w){return g.photo?`<img src="/media/${S.name}/photos/${encodeURIComponent(g.photo)}" style="width:${w||70}px;aspect-ratio:9/16;object-fit:cover;border-radius:8px;flex:none">`:defaultCard(g.i+1,w);}
 function setIlT(i,key,el){const v=parseTime(el.value);if(Number.isNaN(v)){el.style.outline='2px solid var(--bad)';return;}el.style.outline='';setIl(i,key,v);}
 function setIl(i,key,v){const a=S.config.interludes=S.config.interludes||[];while(a.length<=i)a.push({});const o=Object.assign({},a[i]);
+  if(key==='photo'&&o.pictures&&o.pictures.length){o.pictures=o.pictures.map((q,j)=>j?q:Object.assign({},q,{photo:v||''}));a[i]=o;mark();renderDetected();drawTimeline();return;}
   if(v===''||v==null||(typeof v==='number'&&isNaN(v)))delete o[key];else o[key]=v;a[i]=o;mark();renderDetected();drawTimeline();}
 function renderDetected(){
   const box1=$('#detected'),box2=$('#ilist');if(!box1)return;refreshSummaries();
@@ -972,16 +1031,16 @@ function renderDetected(){
   if(!gs.length){const m='<div class="hint">No instrumental gap longer than 4 seconds was found between the lyrics.</div>';box1.innerHTML=m;box2.innerHTML=m;return;}
   const T=S.config.transitions,min=S.config.interlude_min_seconds;
   const opt=(cur,def)=>`<option value="">Same as default (${tLabel(def)})</option>`+TLIST.map(n=>`<option value="${n}" ${cur===n?'selected':''}>${tLabel(n)}</option>`).join('');
-  box1.innerHTML=`<div style="overflow-x:auto"><table class="t"><tr><th>#</th><th>Instrumental gap</th><th>Picture here?</th><th>Picture shows from – to (min:sec)</th><th>Transition in</th><th>Transition out</th></tr>`+gs.map(g=>`<tr>
-    <td>${g.i+1}</td><td>${fmt(g.gap_from)} – ${fmt(g.gap_to)}<br><small style="color:var(--mute)">${fmt(g.len)} long</small></td>
+  box1.innerHTML=`<div style="overflow-x:auto"><table class="t"><tr><th>#</th><th>Instrumental gap</th><th>Picture here?</th><th>Transition in</th><th>Transition out</th></tr>`+gs.map(g=>`<tr>
+    <td>${g.i+1}</td><td>${fmt(g.gap_from)} – ${fmt(g.gap_to)}<br><small style="color:var(--mute)">${fmt(g.len)} long${g.on?' · picture '+fmt(g.start)+' – '+fmt(g.end):''}</small></td>
     <td><select onchange="setIl(${g.i},'on',this.value===''?null:this.value==='yes')"><option value="" ${g.mode==='auto'?'selected':''}>Automatic: ${g.auto?'Yes':'No'} (rule: longer than ${fmt(min)})</option><option value="yes" ${g.mode==='yes'?'selected':''}>Yes, always</option><option value="no" ${g.mode==='no'?'selected':''}>No picture</option></select></td>
-    <td style="white-space:nowrap">${g.on?`<input type="text" style="width:92px" value="${g.ov_start==null?'':fmt(g.ov_start)}" placeholder="${fmt(g.start)}" onchange="setIlT(${g.i},'start',this)"> – <input type="text" style="width:92px" value="${g.ov_end==null?'':fmt(g.ov_end)}" placeholder="${fmt(g.end)}" onchange="setIlT(${g.i},'end',this)">`:'<span style="color:var(--mute)">—</span>'}</td>
     <td>${g.on?`<select onchange="setIl(${g.i},'tin',this.value)">${opt(g.ov_in,T.interlude_in.name)}</select>`:'<span style="color:var(--mute)">—</span>'}</td>
     <td>${g.on?`<select onchange="setIl(${g.i},'tout',this.value)">${opt(g.ov_out,T.interlude_out.name)}</select>`:'<span style="color:var(--mute)">—</span>'}</td></tr>`).join('')+`</table></div>
     <div class="hint" style="margin-top:6px">${gs.filter(g=>g.on).length} of ${gs.length} gaps get a picture. Change the rule in step 5, or set any gap to Yes or No here. The default transitions are chosen below.</div>`;
   box2.innerHTML=gs.filter(g=>g.on).map(g=>`<div class="row" style="padding:10px 0;border-bottom:1px solid var(--line);align-items:center">
-    ${thumb(g)}<div style="flex:1;min-width:220px"><b>Interlude (gap ${g.i+1})</b> · ${fmt(g.start)} to ${fmt(g.end)}<br><span class="hint" style="margin:0">in: ${tLabel(g.tin)} · out: ${tLabel(g.tout)}</span></div>
-    <div><label class="l">Picture</label><select onchange="setIl(${g.i},'photo',this.value)"><option value="">Default picture</option>${S.photos.map(f=>`<option value="${esc(f)}" ${g.photo===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div></div>`).join('')||'<div class="hint">No gap is long enough for a picture with the current rule.</div>';
+    ${thumb(g)}<div style="flex:1;min-width:220px"><b>Interlude (gap ${g.i+1})</b> · ${fmt(g.start)} to ${fmt(g.end)}<br><span class="hint" style="margin:0">in: ${tLabel(g.tin)} · out: ${tLabel(g.tout)}${g.npics>1?' · '+g.npics+' pictures':''}</span>
+    <br><button class="small" style="margin-top:6px" onclick="edEditInterlude(${g.i+1})">Pictures, filters and motion…</button></div>
+    <div><label class="l">${g.npics>1?'First picture':'Picture'}</label><select onchange="setIl(${g.i},'photo',this.value)"><option value="">Default picture</option>${S.photos.map(f=>`<option value="${esc(f)}" ${g.photo===f?'selected':''}>${esc(f)}</option>`).join('')}</select></div></div>`).join('')||'<div class="hint">No gap is long enough for a picture with the current rule.</div>';
 }
 
 // ---------- simple style picker ----------
@@ -1057,7 +1116,7 @@ function refreshSummaries(){
   if(doneBefore){const newly=STEPS.filter(id=>done[id]&&!doneBefore[id]);if(newly.length)openNextIncomplete(done);}
   doneBefore=done;
 }
-function openCard(sec,on){sec.classList.toggle('open',on);if(on&&sec.id==='s4')setTimeout(drawTimeline,50);if(on&&sec.id==='s7x')return;}
+function openCard(sec,on){sec.classList.toggle('open',on);if(on&&sec.id==='s4')setTimeout(drawTimeline,50);if(sec.id==='s0'&&typeof edOpen==='function'){if(on)setTimeout(edOpen,30);else edClose();}if(on&&sec.id==='s7x')return;}
 function openNextIncomplete(done){const id=STEPS.find(x=>x!=='s9'&&!done[x]);if(id)openCard(document.getElementById(id),true);}
 function initCards(){
   $$('main section.card').forEach(sec=>{
@@ -1073,6 +1132,7 @@ function openInitial(){   // all steps start closed; open the first one that sti
   doneBefore=null;refreshSummaries();
   const done={};STEPS.forEach(id=>done[id]=stepDone(id));
   const id=STEPS.find(x=>x!=='s9'&&!done[x])||'s9';openCard(document.getElementById(id),true);
+  if(done.s4&&hasVideo())openCard(document.getElementById('s0'),true);   // lyrics placed: show the preview
   doneBefore=done;
 }
 
@@ -1242,5 +1302,6 @@ async function autoPlace(){
 }
 poll().catch(()=>{});
 </script>
+<script src="/editor.js"></script>
 </body>
 </html>

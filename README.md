@@ -19,10 +19,42 @@ Needs ffmpeg (`brew install ffmpeg`) and Google Chrome. Details: `docs/SETUP.md`
 ```
 Opens http://127.0.0.1:8766 (only on your own computer). A "What is happening" panel at the top shows what is in, and what the tool is doing.
 Steps (each a collapsible card with a one-line summary): 1 Song and saved looks, 2 **Lyrics**, 3 **Files** (upload / drag and drop),
-4 Timings and transitions, 5 Photos (and snapshots of the video), 6 Look and fonts (fonts, colours, 46 lyric animations),
+4 Interludes and transitions, 5 Photos (and snapshots of the video), 6 Look and fonts (fonts, colours, 46 lyric animations),
 7 Credits and cards, 8 Check and make. Save with the button or Cmd+S. Times are always typed and shown as min:sec.
 Defaults come from the Srikaramagu video: two-line lyrics with a pink-to-turquoise gradient, closest free font match (not her confirmed font).
 Fonts for the previews load from Google Fonts, so the page needs internet.
+
+## Preview & edit (the card at the top)
+Plays the song with everything the finished video gets, before anything is made: her video with its filters and motion, lyrics with
+their animation, her name, the opening and end cards, and the interlude pictures with their filters, motion and transitions. Switch
+between Instagram, YouTube and the reel. Every change anywhere on the page shows at once. The picture, the tools and the timeline fit
+in the window; **⛶ Full screen** gives the editor the whole window.
+
+**Tools** (InShot-style; each opens its own popup and changes what is under the playhead):
+- ✂️ **Split** cuts her video at the playhead, so each part can have its own filter and motion.
+- 🎨 **Filter**: 27 looks with strength and fine adjustments (brightness, contrast, colour, warmth, tint, fade, dark corners, grain,
+  soft blur), shown on the current frame. For her video (the part under the playhead) or an interlude picture; "use for all" copies it.
+- 🎥 **Motion**: 14 (zooms, drifts, pulse, sway) for her video's part or a picture.
+- ✨ **Lyric anim.**: 46 animations for the lyric screen under the playhead, or for every screen.
+- 🔀 **Transition**: the transition nearest the playhead (cards, into/out of an interlude, between two pictures); it plays at once.
+- 🔤 **Text**: font, colours and size of the lyrics.
+- ✏️ **Lyrics**: change the words of the screen under the playhead, or remove it. ➕ **Add lyric**: a new screen at the playhead.
+- 🖼️ **Pictures**: the pictures of the nearest interlude (several, each with its own photo, filter, motion and transition).
+
+**Timeline**: drag lyric screens, interludes, the cards and the cuts in her video; drag the ends to make them longer or shorter;
+double-click a lyric screen to go back to its automatic time. A removed screen stays as a faint outline: click it to bring it back.
+Drag the lyrics up or down on the picture, or her name anywhere. Space plays and pauses; the arrow keys step a second (Shift: a tenth).
+There are no timing tables any more: step 4 keeps which gaps get pictures and the transition styles.
+
+The first time, the page makes a small copy of the video for smooth playback (10 to 40 seconds; the progress shows on the picture).
+How close the preview is to the video is checked automatically:
+```
+.venv/bin/python tools/check_preview.py                                  # every transition, filter and motion against ffmpeg
+.venv/bin/python tools/check_preview_video.py <song> [instagram|youtube|reel]   # the preview against a built video (page running)
+```
+Measured on both songs: within 1-2 of 255 for transitions and filters, within 1-5 overall for whole frames (with a filtered,
+zooming part of her video, changed and removed lyrics, and two pictures in an interlude); her video is a little softer in the preview
+because it plays the small copy.
 
 ## How a video is made
 1. **Lyrics first** (step 2), then **files** (step 3). Needed: the lyrics and a video. Optional: mastered audio (recommended for a long video) and her vocal file.
@@ -72,8 +104,9 @@ songs/<song>/      raw files + song.json, lyrics.txt, credits.json  (out/ = buil
 songs/_template/   copied by tools/new_song.py
 brand/             logo and other small shared brand files
 content/           saved looks (presets)
-lib/               lyrics, alignment, voice map, audio sync, pipeline, renderer, animations, transitions
-tools/             build_song.py (builds), new_song.py
-ui/                the settings page (one HTML file)
+lib/               lyrics, alignment, voice map, audio sync, pipeline, renderer, animations, transitions,
+                   picture filters and motions (fx.json, fx.py, fx.js), card pictures (stills.py)
+tools/             build_song.py (builds), new_song.py, make_proxy.py (preview copy), check_preview*.py (automatic checks)
+ui/                the settings page (index.html) and its preview and timeline (editor.js)
 docs/              plan, sample analysis, setup; CLAUDE.md at the top level is for Claude Code
 ```
