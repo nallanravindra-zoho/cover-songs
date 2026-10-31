@@ -93,6 +93,35 @@ class Shots:
         (d / "done").write_text("ok")
         return res
 
+    def ensure_fonts(self, fonts):
+        """Load fonts the page did not start with (a font picked for one card piece or lyric screen), and wait for them."""
+        self.loaded = getattr(self, "loaded", set())
+        new = [f for f in fonts if f and f not in self.loaded]
+        if not new:
+            return
+        self.pg.evaluate("""hrefs => hrefs.forEach(h => { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = h; document.head.appendChild(l); })""",
+                         [GF.format(fam(f)) for f in new])
+        self.pg.wait_for_timeout(600)
+        self.pg.evaluate("""async fs => { for (const f of fs) for (const w of [400, 600, 700]) { try { await document.fonts.load(`${w} 40px '${f}'`, 'Aaबచ'); } catch (e) {} } }""", new)
+        self.loaded.update(new)
+
+    def piece_png(self, html, size, out):
+        """One text piece alone on the page, cut out with room for its outline and glow. Returns (width, height) in pixels and
+        its middle as a share of the page (cx, cy)."""
+        self.pg.evaluate("h => { document.getElementById('c').innerHTML = h; }", html)
+        self.pg.evaluate("() => document.fonts.ready")
+        self.pg.wait_for_timeout(150)
+        r = self.pg.evaluate("""() => { const ls = [...document.querySelectorAll('#c .card-el > div')].map(e => e.getBoundingClientRect());
+            if (!ls.length) return null; return [Math.min(...ls.map(r => r.left)), Math.min(...ls.map(r => r.top)), Math.max(...ls.map(r => r.right)), Math.max(...ls.map(r => r.bottom))]; }""")
+        if not r:
+            return None
+        pad = max(6, size * 0.45)
+        x0, y0, x1, y1 = max(0, r[0] - pad), max(0, r[1] - pad), min(self.cw, r[2] + pad), min(self.ch, r[3] + pad)
+        self.pg.screenshot(path=str(out), clip={"x": x0, "y": y0, "width": x1 - x0, "height": y1 - y0}, omit_background=True)
+        from PIL import Image
+        w, h = Image.open(out).size
+        return w, h, (x0 + x1) / 2 / self.cw, (y0 + y1) / 2 / self.ch
+
     def png(self, html, out, transparent=True):
         self.pg.evaluate("h => { document.getElementById('c').innerHTML = h; }", html)
         self.pg.evaluate("() => document.fonts.ready")
@@ -168,6 +197,8 @@ def lyric_html(look, lines, sh=None, k=1.0):
 def logo_html(look, cw=1080, k=1.0):
     """Her handwritten name: yellow > orange > pink gradient letters, dark outline, violet glow (as in the reference video)."""
     L = look
+    if L.get("logo_show") is False or not (L.get("logo_text") or "").strip():     # switched off in the preview
+        return ""
     first, second = (L["logo_text"].split(" ", 1) + [""])[:2]
     size = L["logo_size"] * cw * 0.26 * k
     g = lambda t: gtext([t], L["logo_font"], 400, size, L["logo_fill_left"], L["logo_fill_right"], L["logo_outline"], L["logo_outline_w"], L["logo_glow"], L["logo_fill_mid"]).replace("margin:0 auto", "margin:0")
@@ -212,70 +243,80 @@ def data_uri(path):
     return f"data:image/jpeg;base64,{b}" if str(path).lower().endswith((".jpg", ".jpeg")) else f"data:image/png;base64,{b}"
 
 
-def opening_html(look, credits, language, bg, title_fallback="", sh=None, k=1.0, blur=0):
-    """Opening card: title, her name, the original song's credits stacked (as in her Srikaramagu video)."""
-    L, O = look, credits["opening"]
+CARD_PIECES = {"opening": ["title", "cover", "credits"], "ending": ["name", "lines"]}
+CARD_PIECE_LABEL = {"title": "Title", "cover": "Her name (cover by)", "credits": "Song credits", "name": "Her name", "lines": "Lines under the name"}
+
+
+def card_parts(kind, look, credits, language, bg, title_fallback="", sh=None, k=1.0, blur=0, photo_h=None, styles=None):
+    """A card as its background and its text pieces, each piece {"id", "html", "size"} placed where the card always had it.
+    styles: {piece id: {"font", "size", "fill_left", "fill_right", "outline", "glow"}} set in the preview (size before k).
+    Opening: title, her name ("cover by"), the song's credits. End: her name, the lines under it."""
+    L, O, st = look, credits["opening"], styles or {}
     lab = credits["labels"].get(language) or ["", "", "", ""]
     rows = [(lab[0], O.get("film")), (lab[1], O.get("lyricist")), (lab[2], O.get("music")), (lab[3], O.get("singers"))]
-    lines = [x for a, b in rows if b for x in (a, b) if x]
-    title = O.get("title_line") or title_fallback
-    tl, ts = wrap_words(title, 14), L["title_size"] * k
-    cl, cs = lines, L["credits_size"] * k
-    if sh is not None:
-        tl, ts = fit_lines(sh, tl, L["credits_font"], L["credits_weight"], ts, sh.cw * 0.9)
-        cl, cs = fit_lines(sh, cl or [" "], L["credits_font"], L["credits_weight"], cs, sh.cw * 0.88)
-        cs = min(cs, 0.50 * sh.ch / (max(1, len(cl)) * 1.35))
-    cw = sh.cw if sh is not None else 1080
-    filt = f"filter:blur({blur}px);transform:scale(1.15);" if blur else ""
-    h = (f"<img src=\"{bg}\" style=\"position:absolute;inset:0;width:100%;height:100%;object-fit:cover;{filt}\">"
-         "<div style=\"position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.30),rgba(0,0,0,.10) 45%,rgba(0,0,0,.35))\"></div>"
-         "<div style=\"position:absolute;left:5%;right:5%;top:5%\">"
-         + gtext(tl, L["credits_font"], L["credits_weight"], ts, L["title_fill_left"], L["title_fill_right"], L["title_outline"], 0.1, L["title_glow"])
-         + "</div>"
-         "<div style=\"position:absolute;left:6%;right:6%;top:37%\">"
-         + gtext([O.get("cover_by", "")], L["logo_font"], 400, 96 * k, L["logo_fill_left"], L["logo_fill_right"], L["logo_outline"], L["logo_outline_w"], L["logo_glow"], L["logo_fill_mid"])
-         + "</div>"
-         "<div style=\"position:absolute;left:6%;right:6%;top:47%\">"
-         + gtext(cl, L["credits_font"], L["credits_weight"], cs, L["title_fill_left"], L["title_fill_right"], L["title_outline"], 0.1, L["title_glow"])
-         + "</div>")
-    return h
+    credit_lines = [x for a, b in rows if b for x in (a, b) if x]
 
-
-def end_html(look, credits, bg, sh=None, language="hindi", k=1.0, photo_h=None):
-    """End card laid out like the opening card: her name big at the top, then the credits spread below it, over a blurred, tinted copy
-    of the picture. photo_h (percent) is the height of the sharp picture at the bottom, or None for no sharp picture."""
-    L, O = look, credits["opening"]
+    def S(pid, key, default):
+        v = (st.get(pid) or {}).get(key)
+        return default if v in (None, "") else v
+    pieces = []
+    if kind == "opening":
+        title = O.get("title_line") or title_fallback
+        f, ts = S("title", "font", L["credits_font"]), float(S("title", "size", L["title_size"])) * k
+        tl = wrap_words(title, 14)
+        if sh is not None:
+            tl, ts = fit_lines(sh, tl, f, L["credits_weight"], ts, sh.cw * 0.9)
+        pieces.append({"id": "title", "size": ts, "html": "<div class=\"card-el\" style=\"position:absolute;left:5%;right:5%;top:5%\">"
+                       + gtext(tl, f, L["credits_weight"], ts, S("title", "fill_left", L["title_fill_left"]), S("title", "fill_right", L["title_fill_right"]),
+                               S("title", "outline", L["title_outline"]), 0.1, S("title", "glow", L["title_glow"])) + "</div>"})
+        f, cz = S("cover", "font", L["logo_font"]), float(S("cover", "size", 96)) * k
+        pieces.append({"id": "cover", "size": cz, "html": "<div class=\"card-el\" style=\"position:absolute;left:6%;right:6%;top:37%\">"
+                       + gtext([O.get("cover_by", "")], f, 400, cz, S("cover", "fill_left", L["logo_fill_left"]), S("cover", "fill_right", L["logo_fill_right"]),
+                               S("cover", "outline", L["logo_outline"]), L["logo_outline_w"], S("cover", "glow", L["logo_glow"]), None if (st.get("cover") or {}).get("fill_left") else L["logo_fill_mid"]) + "</div>"})
+        f, cs = S("credits", "font", L["credits_font"]), float(S("credits", "size", L["credits_size"])) * k
+        cl = credit_lines
+        if sh is not None:
+            cl, cs = fit_lines(sh, cl or [" "], f, L["credits_weight"], cs, sh.cw * 0.88)
+            cs = min(cs, 0.50 * sh.ch / (max(1, len(cl)) * 1.35))
+        pieces.append({"id": "credits", "size": cs, "html": "<div class=\"card-el\" style=\"position:absolute;left:6%;right:6%;top:47%\">"
+                       + gtext(cl, f, L["credits_weight"], cs, S("credits", "fill_left", L["title_fill_left"]), S("credits", "fill_right", L["title_fill_right"]),
+                               S("credits", "outline", L["title_outline"]), 0.1, S("credits", "glow", L["title_glow"])) + "</div>"})
+        filt = f"filter:blur({blur}px);transform:scale(1.15);" if blur else ""
+        bgh = (f"<img src=\"{bg}\" style=\"position:absolute;inset:0;width:100%;height:100%;object-fit:cover;{filt}\">"
+               "<div style=\"position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.30),rgba(0,0,0,.10) 45%,rgba(0,0,0,.35))\"></div>")
+        return bgh, pieces
     name = (credits["ending"].get("name") or "").split(" ")
     extra = credits["ending"].get("extra_lines") or []
-    lab = credits["labels"].get(language) or ["", "", "", ""]
-    rows = [(lab[0], O.get("film")), (lab[1], O.get("lyricist")), (lab[2], O.get("music")), (lab[3], O.get("singers"))]
-    song = [x for a, b in rows if b for x in (a, b) if x] if credits["ending"].get("show_song_credits", False) else []
+    song = credit_lines if credits["ending"].get("show_song_credits", False) else []
     pairs = []
     for x in extra:                                    # "Singer: Name" -> two lines, as the opening card shows a label and then its value
-        a, sep, b = x.partition(":")
-        pairs += [a.strip() + ":", b.strip()] if sep and b.strip() and len(a) <= 30 else [x]
+        a_, sep, b_ = x.partition(":")
+        pairs += [a_.strip() + ":", b_.strip()] if sep and b_.strip() and len(a_) <= 30 else [x]
     lines = song + pairs
-    esz, csz = L["end_size"] * k, L["credits_size"] * k
+    nf, esz = S("name", "font", L["end_font"]), float(S("name", "size", L["end_size"])) * k
+    lf, csz = S("lines", "font", L["credits_font"]), float(S("lines", "size", L["credits_size"])) * k
     ch = sh.ch if sh is not None else 1920
     if sh is not None and name:
-        name, esz = fit_lines(sh, name, L["end_font"], 400, esz, sh.cw * 0.9, L["end_outline_w"])
+        name, esz = fit_lines(sh, name, nf, 400, esz, sh.cw * 0.9, L["end_outline_w"])
     if lines:
         if sh is not None:
-            lines, csz = fit_lines(sh, lines, L["credits_font"], L["credits_weight"], csz, sh.cw * 0.88)
+            lines, csz = fit_lines(sh, lines, lf, L["credits_weight"], csz, sh.cw * 0.88)
         csz = min(csz, 0.40 * ch / (len(lines) * 1.7))               # all the lines must fit between the name and the picture
     top_credits = max(24.0, 4 + len(name) * esz * 1.2 / (ch / 100) + 4)
     photo_h = (28 if lines else 56) if photo_h is None else photo_h
-    h = (f"<img src=\"{bg}\" style=\"position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:blur({L['end_blur'] * 1.5}px);transform:scale(1.15)\">"
-         f"<div style=\"position:absolute;inset:0;background:{L['end_tint']};opacity:.5;mix-blend-mode:multiply\"></div>")
-    if photo_h:
-        h += (f"<img src=\"{bg}\" style=\"position:absolute;left:0;right:0;bottom:0;width:100%;height:{photo_h}%;object-fit:cover;object-position:top;"
-              "-webkit-mask-image:linear-gradient(transparent,#000 22%)\">")
-    h += ("<div style=\"position:absolute;left:3%;right:3%;top:4%;transform:rotate(-3deg)\">"
-          + gtext(name, L["end_font"], 400, esz, L["end_fill"], L["end_fill"], L["end_outline"], L["end_outline_w"], L["end_glow"]) + "</div>")
+    nc = S("name", "fill_left", L["end_fill"])
+    pieces.append({"id": "name", "size": esz, "html": "<div class=\"card-el\" style=\"position:absolute;left:3%;right:3%;top:4%;transform:rotate(-3deg)\">"
+                   + gtext(name, nf, 400, esz, nc, S("name", "fill_right", nc), S("name", "outline", L["end_outline"]), L["end_outline_w"], S("name", "glow", L["end_glow"])) + "</div>"})
     if lines:
-        h += (f"<div style=\"position:absolute;left:6%;right:6%;top:{top_credits}%\">"
-              + gtext(lines, L["credits_font"], L["credits_weight"], csz, L["title_fill_left"], L["title_fill_right"], L["title_outline"], 0.1, L["title_glow"], lh=1.7) + "</div>")
-    return h
+        pieces.append({"id": "lines", "size": csz, "html": f"<div class=\"card-el\" style=\"position:absolute;left:6%;right:6%;top:{top_credits}%\">"
+                       + gtext(lines, lf, L["credits_weight"], csz, S("lines", "fill_left", L["title_fill_left"]), S("lines", "fill_right", L["title_fill_right"]),
+                               S("lines", "outline", L["title_outline"]), 0.1, S("lines", "glow", L["title_glow"]), lh=1.7) + "</div>"})
+    bgh = (f"<img src=\"{bg}\" style=\"position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:blur({L['end_blur'] * 1.5}px);transform:scale(1.15)\">"
+           f"<div style=\"position:absolute;inset:0;background:{L['end_tint']};opacity:.5;mix-blend-mode:multiply\"></div>")
+    if photo_h:
+        bgh += (f"<img src=\"{bg}\" style=\"position:absolute;left:0;right:0;bottom:0;width:100%;height:{photo_h}%;object-fit:cover;object-position:top;"
+                "-webkit-mask-image:linear-gradient(transparent,#000 22%)\">")
+    return bgh, pieces
 
 
 def video_size(src):
@@ -459,9 +500,10 @@ def compose(src, screens, logo_png, pics, out, size, layout=None, fps=30, dur_to
         fc.append("[leftp][right]hstack=inputs=2[hs]")
         final = "hs"
     if effects:                                       # shake, flash, glitch ..: over the whole frame, text included (fx.effect_graph)
-        eg, lab = fx.effect_graph(effects, W, H, a, L, final, fps)
+        eg, lab, eins = fx.effect_graph(effects, W, H, a, L, final, fps, work=Path(out).parent.parent / "work" / "fx" if (Path(out).parent.parent / "work").exists() else Path(tempfile.gettempdir()), k_in=ins.count("-i"))
         if eg:
             fc.append(eg)
+            ins += eins
             final = lab
     af = []
     if fade and cut or fade and L > 3 * fade:

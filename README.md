@@ -30,17 +30,24 @@ their animation, her name, the opening and end cards, and the interlude pictures
 between Instagram, YouTube and the reel. Every change anywhere on the page shows at once. The picture, the tools and the timeline fit
 in the window; **⛶ Full screen** gives the editor the whole window.
 
-The picture is in the middle: the settings of what you selected on its left, the choices of the tool you picked on its right, and
-the "i" next to the title explains it all.
+The picture is in the middle with its play controls beside it (play, previous/next, ±5 s, one frame back/on, the clock): the settings
+of what you selected on its left, the choices of the tool you picked on its right, and the "i" next to the title explains it all.
+**↶ Undo / ↷ Redo** (also ⌘Z / ⇧⌘Z, and the Edit menu in the Mac app) step back and forth through every change; a drag or a burst
+of typing is one step. Inside a text box ⌘Z undoes the typing as usual. Save stays a separate step (the button under the step rail).
 
 **Tools** (one row under the picture, InShot-style; each changes what is under the playhead or what is selected):
 - ✂️ **Split** cuts her video at the playhead, so each part can have its own filter and motion.
 - 🎨 **Filter**: 27 looks with strength and fine adjustments, shown on the current frame, for her video's part or an interlude picture.
 - 🎥 **Motion**: 14 (zooms, drifts, pulse, sway) for her video's part or a picture.
-- ✨ **Lyric anim.**: 46 animations for the lyric screen under the playhead, or for every screen.
-- 🔀 **Transition**: the transition nearest the playhead; "None (cut)" for a straight cut. It plays at once.
-- 💥 **Effects**: shake, zoom beat, glitch, flash, dip to black, B&W strobe, invert, RGB split, dreamy blur, old film, VHS, over a
-  stretch of time on the whole picture (orange row on the timeline: drag, stretch, delete).
+- ✨ **Lyric anim.**: 68 animations for the lyric screen under the playhead, or for every screen (fades, slides, rolls, spins, line /
+  word / letter by letter, reveals, glitch, heartbeat, jelly …).
+- 🔀 **Transition**: the transition nearest the playhead, 90 of them; "New ✦" has the CapCut / InShot-style ones (doors, whip, heart,
+  star, bubbles, spin, twirl, film roll, flash cut, shake cut, slices …); "None (cut)" for a straight cut. It plays at once.
+- 💥 **Effects** (32): Move (shake, zoom beat, glitch, heartbeat, zoom punch, dizzy, swing, earthquake, RGB shake), Light (flash, dip
+  to black, B&W strobe, invert, flicker, fades from/to black and white, light leak, spotlight), Colour (rainbow, B&W fade, contrast
+  pop) and Look (RGB split, dreamy blur, old film, VHS, noise, Retro DV, cinema bars, blur in/out), over a stretch of time on the whole
+  picture (orange row on the timeline: drag, stretch, delete).
+- 💡 **Colour ideas** for the words on the picture right now (the same as "Find ideas" in the text settings).
 - 🔤 **Text**: font (tiles in the screen's own words), size, weight, outline, colours; for all lyrics or only this screen.
   ✨ **Colour ideas** are worked out from the picture behind the words (opposite colours, triads, gold, neon ..., only ones that stand
   out from it); press ♥ to keep a set: saved sets (content/palettes.json) are offered first in every song.
@@ -50,12 +57,16 @@ the "i" next to the title explains it all.
 - 🖼️ **Pictures**: the pictures of the nearest interlude. Drag the white line between two pictures on the timeline (or type a length)
   to show one longer than the other. 🗑️ **Delete** (or the Delete key): the selected block, whatever it is.
 
-**On the picture**: click the words to select that screen (its text style opens on the right); double-click to type the words right on
+**On the picture**: **her name** (top) shows a dashed outline when pointed at: drag it anywhere (for the whole video), click it to
+change its words, script font, size and colours, or switch it off. On a **card**, each piece of text (opening: title, her name,
+credits; end card: her name, the lines under it) can be dragged anywhere and clicked for its own font, size and colours; click the
+card itself to change its words. The card is redrawn by the video maker's own code in a second or two. Click the words to select that screen (its text style opens on the right); double-click to type the words right on
 the picture; drag them anywhere (only that screen while it is selected, otherwise all lyrics); drag her name anywhere.
 **⛶** on the picture shows it full screen with play, ±5 s, previous/next and a time bar; **Editor full screen** gives the whole editor
 the window.
 
-**Timeline**: drag lyric screens, interludes, cards, effects and the cuts in her video; drag the ends to make them longer or shorter;
+**Timeline**: one lane per layer, named in the fixed column on the left and each in its own colour: 🎵 Song (loudness; green line =
+her voice), 💥 Effects, 🅣 Text, 🎬 Video (her video's parts), 🎤 Lyrics, 🖼️ Pictures (cards and interludes). Drag lyric screens, interludes, cards, effects and the cuts in her video; drag the ends to make them longer or shorter;
 double-click a lyric screen to go back to its automatic time. The diamonds under the pictures are transitions (click to change or
 delete). Deleted interludes, cards and screens stay as faint outlines: click one to bring it back. Space plays and pauses; the arrow
 keys step a second (Shift: a tenth). Step 4 keeps which gaps get pictures and the transition styles; there are no timing tables.

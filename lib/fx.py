@@ -234,6 +234,37 @@ def glitch_slots(e):
     return out
 
 
+def overlay_png(kind, W, H, work):
+    """Pictures laid over the frame by some effects (the preview draws the same with CSS in editor.js):
+    scanlines (Retro DV), a warm glow from the top left (Light leak)."""
+    from PIL import Image
+    out = Path(work) / f"{kind}_{W}x{H}.png"
+    if out.exists():
+        return out
+    out.parent.mkdir(parents=True, exist_ok=True)
+    if kind == "scan":                                   # a dark line every 4 pixels of a 1080-wide frame
+        step = max(2, round(4 * W / 1080))
+        a = np.zeros((H, W, 4), np.uint8)
+        a[::step, :, 3] = 72
+        a[1::step, :, 3] = 36
+        Image.fromarray(a, "RGBA").save(out)
+    elif kind == "leak":                                 # orange light from the top-left corner, fading out
+        ys, xs = np.mgrid[0:H, 0:W]
+        d = np.sqrt((xs / W) ** 2 + (ys / H) ** 2) / 1.2
+        f = np.clip(1 - d, 0, 1) ** 1.6
+        rgb = np.stack([255 * f, 150 * f, 60 * f], -1)
+        Image.fromarray(rgb.astype(np.uint8), "RGB").save(out)
+    return out
+
+
+def hue_matrix(deg, sat=1.0):
+    """RGB matrix of ffmpeg's hue filter (turns the colour in YUV by `deg`, scales colour by `sat`): the preview uses the same."""
+    Y = np.array([[.299, .587, .114], [-.168736, -.331264, .5], [.5, -.418688, -.081312]])
+    c, s_ = math.cos(math.radians(deg)), math.sin(math.radians(deg))
+    Rm = np.array([[1, 0, 0], [0, c * sat, -s_ * sat], [0, s_ * sat, c * sat]])
+    return np.linalg.inv(Y) @ Rm @ Y
+
+
 def effect_chain(effects, W, H, a, L, fps=30):
     """ffmpeg filters for the effects (times on the song, `a` = where this video starts): colour effects first, then the moves.
     Returns a list of (kind, text): ("f", filters to append) or ("g", a geometric step written as split/move/overlay)."""
@@ -274,6 +305,58 @@ def effect_chain(effects, W, H, a, L, fps=30):
             geo.append(("crop", 1 + 2.4 * A, f"{A}*sin(2*PI*9.3*{T})", f"{0.6 * A}*sin(2*PI*7.1*{T}+1)", t0, t1))
         elif ty == "zoom":
             geo.append(("zoom", f"1+0.08*{k}*pow(1-(2*(it-{t0:.3f})-floor(2*(it-{t0:.3f}))),3)", t0, t1))
+        elif ty in ("fadeinblack", "fadeoutblack", "fadeinwhite", "fadeoutwhite"):
+            sign = -1 if "black" in ty else 1
+            u = f"({T}/{max(0.01, t1 - t0):.3f})"
+            amt = f"(1-{u})" if "fadein" in ty else u
+            col.append(f"eq=brightness='{0.855 * sign * k}*{amt}':eval=frame:{on}")
+        elif ty == "flicker":
+            col.append(f"eq=brightness='0.855*0.15*{k}*sin(2*PI*9*{T})*sin(2*PI*4.7*{T}+1)':eval=frame:{on}")
+        elif ty == "rainbow":
+            col.append(f"hue=h='120*{T}':{on}")
+        elif ty == "bwfade":
+            col.append(f"hue=s='max(0,1-{k}*{T}/{max(0.01, t1 - t0):.3f})':{on}")
+        elif ty == "contrast":
+            C = 1 + 0.35 * k
+            col.append("lutrgb=" + ":".join(f"{ch}='clip((val-128)*{C:.3f}+128,0,255)'" for ch in "rgb") + f":{on}")
+        elif ty == "noise":
+            col.append(f"noise=c0s={round(35 * k)}:c0f=t+u:{on}")
+        elif ty == "retrodv":
+            s = max(1, round(3 * k * W / 1080))
+            col.append(f"rgbashift=rh={-s}:bh={s}:{on}")
+            col.append(f"noise=c0s={round(20 * k)}:c0f=t+u:{on}")
+            geo.append(("png", "scan", t0, t1, "over", 1.0))
+        elif ty == "letterbox":
+            bh = int(round(H * 0.12 * k / 2)) * 2
+            col.append(f"drawbox=x=0:y=0:w=iw:h={bh}:color=black:t=fill:{on}")
+            col.append(f"drawbox=x=0:y=ih-{bh}:w=iw:h={bh}:color=black:t=fill:{on}")
+        elif ty == "spotlight":
+            geo.append(("png", ("vig", round(min(1.0, 0.95 * k), 3)), t0, t1, "over", 1.0))
+        elif ty == "lightleak":
+            geo.append(("png", "leak", t0, t1, "screen", min(1.0, 0.85 * k)))
+        elif ty in ("blurin", "blurout"):
+            for j in range(8):                           # the blur changes in 8 steps (the preview steps the same)
+                g0, g1 = t0 + j * (t1 - t0) / 8, t0 + (j + 1) * (t1 - t0) / 8
+                f = 1 - (j + 0.5) / 8 if ty == "blurin" else (j + 0.5) / 8
+                col.append(f"gblur=sigma={14 * k * f * W / 1080:.2f}:enable='between(t,{g0:.3f},{g1:.3f})'")
+        elif ty == "rgbshake":
+            s = max(1, round(14 * k * W / 1080))
+            j = 0
+            while t0 + j / 6 < t1:
+                col.append(f"rgbashift=rh={-s}:bh={s}:enable='between(t,{t0 + j / 6:.3f},{min(t1, t0 + j / 6 + 1 / 12):.3f})'")
+                j += 1
+        elif ty == "earthquake":
+            A = 0.03 * k
+            geo.append(("crop", 1 + 2.4 * A, f"{A}*sin(2*PI*13*{T})", f"{0.6 * A}*sin(2*PI*11*{T}+1)", t0, t1))
+        elif ty == "heartbeat":
+            ph = f"mod(it-{t0:.3f},0.8)"
+            geo.append(("zoom", f"1+0.07*{k}*(exp(-({ph}/0.06)*({ph}/0.06))+0.7*exp(-(({ph}-0.22)/0.06)*(({ph}-0.22)/0.06)))", t0, t1))
+        elif ty == "zoompunch":
+            geo.append(("zoom", f"1+0.2*{k}*(1-pow(1-min((it-{t0:.3f})/0.35,1),3))", t0, t1))
+        elif ty == "dizzy":
+            geo.append(("rot", 1.18, f"{0.06 * k}*sin(2*PI*1.2*{T})", f"{0.02 * k}*sin(2*PI*0.8*{T})", t0, t1))
+        elif ty == "swing":
+            geo.append(("rot", 1.2, f"{0.09 * k}*sin(2*PI*0.9*{T})", "0", t0, t1))
         elif ty == "glitch":
             s = max(1, round(16 * k * W / 1080))
             dxe = "0"
@@ -285,19 +368,40 @@ def effect_chain(effects, W, H, a, L, fps=30):
     return col, geo
 
 
-def effect_graph(effects, W, H, a, L, src, fps=30):
-    """The effects as filter-graph text from label `src`; returns (text, output label) or (None, src) when there are none.
-    A move (shake, zoom, glitch) works on a copy of the frames of its own stretch only, laid back over the video."""
+def effect_graph(effects, W, H, a, L, src, fps=30, work=None, k_in=0):
+    """The effects as filter-graph text from label `src`; returns (text, output label, extra inputs) or (None, src, []).
+    A move (shake, zoom, glitch) works on a copy of the frames of its own stretch only, laid back over the video; pictures laid over
+    (scanlines, glow, spotlight) are extra inputs numbered from k_in."""
     col, geo = effect_chain(effects, W, H, a, L, fps)
+    ins = []
     if not col and not geo:
-        return None, src
+        return None, src, ins
     parts, lab = [], src
     if col:
         parts.append(f"[{lab}]" + ",".join(col) + "[efc]")
         lab = "efc"
     for j, g in enumerate(geo):
-        t0, t1 = max(0.0, g[-2]), min(L, g[-1])
+        t0, t1 = (max(0.0, g[2]), min(L, g[3])) if g[0] == "png" else (max(0.0, g[-2]), min(L, g[-1]))
         cut = f"trim=start={t0:.3f}:end={t1:.3f}"
+        if g[0] == "png":                                # a picture laid over: normally, or as light ("screen")
+            kind = g[1]
+            png = vignette_png(W, H, kind[1], work) if isinstance(kind, tuple) else overlay_png(kind, W, H, work)
+            ins += ["-loop", "1", "-framerate", str(fps), "-t", f"{L:.3f}", "-i", str(png)]
+            on = f"enable='between(t,{t0:.3f},{t1:.3f})'"
+            if g[4] == "screen":
+                parts.append(f"[{lab}]format=gbrp[efp{j}];[{k_in}:v]format=gbrp[efo{j}];[efp{j}][efo{j}]blend=all_mode=screen:all_opacity={g[5]:.3f}:{on}[efg{j}]")
+            else:
+                parts.append(f"[{lab}][{k_in}:v]overlay=0:0:shortest=1:{on}[efg{j}]")
+            k_in += 1
+            lab = f"efg{j}"
+            continue
+        if g[0] == "rot":
+            sc = g[1]
+            SW, SH = int(round(W * sc / 2)) * 2, int(round(H * sc / 2)) * 2
+            mv = f"{cut},scale={SW}:{SH},rotate=a='{g[2]}':ow=iw:oh=ih:c=black,crop={W}:{H}:x='(iw-ow)/2+({g[3]})*{W}':y='(ih-oh)/2'"
+            parts.append(f"[{lab}]split[efa{j}][efb{j}];[efb{j}]{mv}[efm{j}];[efa{j}][efm{j}]overlay=0:0:eof_action=pass:repeatlast=0[efg{j}]")
+            lab = f"efg{j}"
+            continue
         if g[0] == "crop":
             sc = g[1]
             SW, SH = int(round(W * sc / 2)) * 2, int(round(H * sc / 2)) * 2
@@ -306,4 +410,4 @@ def effect_graph(effects, W, H, a, L, src, fps=30):
             mv = f"{cut},zoompan=z='{g[1]}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s={W}x{H}:fps={fps},setpts=PTS-STARTPTS+{t0:.3f}/TB"
         parts.append(f"[{lab}]split[efa{j}][efb{j}];[efb{j}]{mv}[efm{j}];[efa{j}][efm{j}]overlay=0:0:eof_action=pass:repeatlast=0[efg{j}]")
         lab = f"efg{j}"
-    return ";".join(parts), lab
+    return ";".join(parts), lab, ins

@@ -60,6 +60,27 @@
     ["rgb", "RGB split", "Look"],
     ["blur", "Dreamy blur", "Look"],
     ["oldfilm", "Old film", "Look"],
-    ["vhs", "VHS", "Look"]
+    ["vhs", "VHS", "Look"],
+    ["heartbeat", "Heartbeat", "Move"],
+    ["zoompunch", "Zoom punch", "Move"],
+    ["dizzy", "Dizzy", "Move"],
+    ["swing", "Swing", "Move"],
+    ["earthquake", "Earthquake", "Move"],
+    ["rgbshake", "RGB shake", "Move"],
+    ["flicker", "Flicker", "Light"],
+    ["fadeinblack", "Fade in from black", "Light"],
+    ["fadeoutblack", "Fade out to black", "Light"],
+    ["fadeinwhite", "Fade in from white", "Light"],
+    ["fadeoutwhite", "Fade out to white", "Light"],
+    ["lightleak", "Light leak", "Light"],
+    ["spotlight", "Spotlight", "Light"],
+    ["rainbow", "Rainbow", "Colour"],
+    ["bwfade", "B&W fade", "Colour"],
+    ["contrast", "Contrast pop", "Colour"],
+    ["noise", "Noise", "Look"],
+    ["retrodv", "Retro DV", "Look"],
+    ["letterbox", "Cinema bars", "Look"],
+    ["blurin", "Blur in", "Look"],
+    ["blurout", "Blur out", "Look"]
   ]
 }

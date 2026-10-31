@@ -43,7 +43,7 @@ DEFAULT_LOOK = {
     "credits_font": "Noto Sans Telugu", "credits_weight": 600, "credits_size": 56,
     "credits_fill_left": "#ff4f8b", "credits_fill_right": "#ffb3c1", "credits_outline": "#0d0620", "credits_glow": "#6a3bd9",
     "title_size": 104, "title_fill_left": "#ff4f8b", "title_fill_right": "#ffb3c1", "title_outline": "#0d0620", "title_glow": "#6a3bd9",
-    "logo_mode": "text", "logo_font": "Kaushan Script", "logo_text": "Soujanya Madabhushi",
+    "logo_mode": "text", "logo_show": True, "logo_font": "Kaushan Script", "logo_text": "Soujanya Madabhushi",
     "logo_fill_left": "#ffe45e", "logo_fill_mid": "#ffb27a", "logo_fill_right": "#ff7a95",
     "logo_outline": "#1a0a14", "logo_outline_w": 0.12, "logo_glow": "#8a5cf0", "logo_size": 0.17, "logo_x": 0.15, "logo_y": 0.04,
     "end_font": "Kaushan Script", "end_size": 150, "end_fill": "#1f9a4a", "end_outline": "#05140a", "end_outline_w": 0.13, "end_glow": "#ffc46b",
@@ -573,6 +573,8 @@ def preview_plan(name, data, output):
     for p in plan["pics"]:
         if p.get("still"):
             p["url"] = url(p.pop("still"))
+            if p["kind"] in ("opening", "ending"):         # its text pieces, to drag in the preview
+                p["card"] = p["url"].replace("/api/still?", "/api/cardparts?")
         for q in p.get("parts", []):
             if q.get("still"):
                 q["baked"] = q["still"]["kind"] == "panel"
@@ -583,6 +585,15 @@ def preview_plan(name, data, output):
     plan["voice"] = auto.get("voice", [])
     plan["ready"] = True
     return plan
+
+
+def card_parts(name, key):
+    """A card's background and text pieces with their places (stills.render_card), as URLs for the preview."""
+    import stills
+    out = draw_still(name, key)
+    meta = json.loads(Path(out).with_suffix(".json").read_text())
+    f = lambda n: f"/api/stillfile?name={name}&f={n}"
+    return {"bg": f(meta["bg"]), "size": meta["size"], "els": [dict(e, url=f(e["file"])) for e in meta["els"]]}
 
 
 def proxy_state(name):
@@ -688,6 +699,10 @@ class H(BaseHTTPRequestHandler):
                 return self.send_file(draw_still(q.get("name"), q.get("key")))
             if u.path == "/api/proxy":
                 return self.send_json(proxy_state(q.get("name")))
+            if u.path == "/api/cardparts":
+                return self.send_json(card_parts(q.get("name"), q.get("key")))
+            if u.path == "/api/stillfile":
+                return self.send_file(song_dir(q.get("name")) / "work" / "still" / safe_file(q.get("f")))
             if u.path == "/api/snapshots":
                 return self.send_json({"files": list_snapshots(q.get("name"))})
             if u.path == "/api/songs":

@@ -36,6 +36,10 @@ A local settings page (`settings.py`, port 8766) drives everything. Owner: Ravi 
                      transition name "cut" = straight cut (a 0.1 s fade: 1 frame is too short for xfade). content/palettes.json: saved colours.
                      `texts[{lines, start, end, pos, style, anim}]` free text, drawn with the lyric screens (plan "texts", ids "t0"..);
                      interlude `pictures[].weight` = that picture's length in seconds (scaled to the interlude; fx.interlude_parts).
+                     `look.logo_show` false = no name. Cards: `opening.els` / `ending.els` {piece: {x, y, font, size, fill_left, fill_right,
+                     outline, glow}}; render.card_parts draws background + pieces, stills.render_card lays the pieces' PNGs on it (the
+                     preview gets the same PNGs via /api/cardparts). Shots.ensure_fonts loads a font picked for one piece before drawing. New transitions: trans.CUSTOM and fx.js TR together (check_preview finds them via
+                     index.html's MORE/TREND/TLIST); new effects: fx.effect_chain and editor.js edEffects together, then compare a build.
 - `content/presets/` saved looks. `brand/` her logo (ignored, upload again on a new machine).
 
 ## Rules learned the hard way

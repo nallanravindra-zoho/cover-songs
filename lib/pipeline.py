@@ -583,6 +583,10 @@ def still_spec(c, P, s, frame):
         sp["bg"] = str(c["dir"] / "photos" / f) if f and (c["dir"] / "photos" / f).exists() else str(frame)
         sp.update(credits=c["credits"], language=conf["language"], title=conf.get("title", ""))
         sp.pop("photo", None)
+        els = conf.get(s["kind"], {}).get("els") or {}           # pieces moved or restyled in the preview
+        sp["els_pos"] = {i: {"x": float(v["x"]), "y": float(v["y"])} for i, v in els.items() if v.get("x") is not None and v.get("y") is not None} or None
+        sp["els_style"] = {i: {k2: v[k2] for k2 in ("font", "size", "fill_left", "fill_right", "outline", "glow") if v.get(k2) not in (None, "")} for i, v in els.items()} or None
+        sp["els_style"] = {i: v for i, v in (sp["els_style"] or {}).items() if v} or None
     elif s["kind"] == "panel":
         sp["bg"] = str(frame)
         sp["photo"] = str(c["dir"] / "photos" / s["photo"]) if s.get("photo") else None

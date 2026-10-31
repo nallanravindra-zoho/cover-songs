@@ -107,7 +107,8 @@ def main():
         ui = (HERE / "ui" / "index.html").read_text(encoding="utf-8")
         import re
         tl = re.search(r"const TLIST=\[(.*?)\];", ui, re.S).group(1)
-        offered = set(re.findall(r"'([a-z]+)'", tl)) | set(re.findall(r"'([a-z]+)'", re.search(r"const TREND=\[(.*?)\];", ui).group(1)))
+        offered = set(re.findall(r"'([a-z]+)'", tl)) | set(re.findall(r"'([a-z]+)'", re.search(r"const TREND=\[(.*?)\];", ui).group(1))) \
+            | set(re.findall(r"'([a-z]+)'", re.search(r"const MORE=\[(.*?)\];", ui).group(1)))
         missing = sorted(offered - set(names))
         if missing:
             bad.append(f"transitions offered in the page but not drawn by the preview: {', '.join(missing)}")

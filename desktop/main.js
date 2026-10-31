@@ -33,7 +33,10 @@ function menu() {
       { label: 'Save', accelerator: 'Cmd+S', click: () => run('save()') },
       { type: 'separator' },
       { label: 'Show Song Folder in Finder', click: () => run('S && S.name').then(n => n && shell.openPath(path.join(ROOT, 'songs', n))) } ] },
-    { role: 'editMenu' },
+    { label: 'Edit', submenu: [            // Undo/Redo: the editor's (or a text box's own while typing in it)
+      { label: 'Undo', accelerator: 'Cmd+Z', click: () => run('edUndoKey(false)') },
+      { label: 'Redo', accelerator: 'Shift+Cmd+Z', click: () => run('edUndoKey(true)') },
+      { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' } ] },
     { label: 'Video', submenu: [
       { label: 'Play / Pause', accelerator: 'Cmd+P', click: () => run('edPlay()') },
       { label: 'Back 5 Seconds', accelerator: 'Cmd+Left', click: () => run('edSeek(ED.vid.currentTime-5)') },

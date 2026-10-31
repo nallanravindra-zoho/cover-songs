@@ -32,6 +32,36 @@ CUSTOM = {
     "flash": "st(0,1-abs(2*P-1));st(1,pow(ld(0),3));(1-P)*A(X,Y)*(1-ld(1))+P*B(X,Y)*(1-ld(1))+ld(1)*if(eq(PLANE,0),255,128)",
     # split into thin vertical bars that slide up and down in opposite directions
     "barslide": "st(0,mod(floor(X/(W/10)),2));if(eq(ld(0),0),if(lt(Y,H*(1-P)),A(X,Y+H*P),B(X,Y-H*(1-P))),if(gt(Y,H*P),A(X,Y-H*P),B(X,Y+H*(1-P))))",
+    # --- more, after CapCut / InShot (motion graphics, camera, light, distortion, shapes); the preview draws the same in lib/fx.js ---
+    # the old picture splits in the middle like two doors and slides apart / the new one closes in from both sides
+    "doorsopen": "st(0,P*P*(3-2*P));if(lt(X,W/2),if(lt(X,W/2*(1-ld(0))),A(X+W/2*ld(0),Y),B(X,Y)),if(gt(X,W/2+W/2*ld(0)),A(X-W/2*ld(0),Y),B(X,Y)))",
+    "doorsclose": "st(0,P*P*(3-2*P));if(lt(X,W/2*ld(0)),B(X+W/2*(1-ld(0)),Y),if(gt(X,W-W/2*ld(0)),B(X-W/2*(1-ld(0)),Y),A(X,Y)))",
+    "whipdown": "st(0,P*P*(3-2*P));if(gt(Y,H*ld(0)),A(X,Y-H*ld(0)),B(X,Y+H*(1-ld(0))))",
+    # the new picture comes in through the dark parts of the old one first
+    "lumafade": "if(gt(P*1.2-0.1,(a0(X,Y)-16)/219),B(X,Y),A(X,Y))",
+    # shapes that grow from the middle
+    "heart": "st(3,W*0.36*(P*2.4+0.001));st(1,(X-W/2)/ld(3));st(2,-(Y-H*0.47)/ld(3));if(lte(pow(ld(1)*ld(1)+ld(2)*ld(2)-1,3)-ld(1)*ld(1)*ld(2)*ld(2)*ld(2),0),B(X,Y),A(X,Y))",
+    "star": "if(lt(hypot(X-W/2,Y-H/2)/hypot(W/2,H/2),P*1.6*(0.62+0.38*cos(5*atan2(Y-H/2,X-W/2)))),B(X,Y),A(X,Y))",
+    "cross": "if(gt(lt(abs(X-W/2)/W,P*0.75)+lt(abs(Y-H/2)/H,P*0.75),0),B(X,Y),A(X,Y))",
+    "circlegrid": "st(0,W/7);if(lt(hypot(X-(floor(X/ld(0))+0.5)*ld(0),Y-(floor(Y/ld(0))+0.5)*ld(0))/ld(0),P*0.75),B(X,Y),A(X,Y))",
+    "diagstripes": "if(lt(mod((X+Y)/(W/6),1),P),B(X,Y),A(X,Y))",
+    # the new picture slides in and bounces
+    "bounceslide": "st(0,1-(1-P)*(1-P)*cos(P*3*PI));if(gte(X,W*(1-ld(0))),B(X-W*(1-ld(0)),Y),A(X+W*ld(0),Y))",
+    # the old picture spins away getting smaller, the new one spins in
+    "spin": "st(0,if(lt(P,0.5),1-P*1.6,0.2+(P-0.5)*1.6));st(1,if(lt(P,0.5),P*PI,(P-1)*PI));"
+            "st(2,W/2+((X-W/2)*cos(ld(1))+(Y-H/2)*sin(ld(1)))/ld(0));st(3,H/2+(-(X-W/2)*sin(ld(1))+(Y-H/2)*cos(ld(1)))/ld(0));"
+            "if(between(ld(2),0,W-1)*between(ld(3),0,H-1),if(lt(P,0.5),A(ld(2),ld(3)),B(ld(2),ld(3))),if(eq(PLANE,0),16,128))",
+    # a whirlpool in the middle while one picture fades into the other
+    "twirl": "st(0,12.566*P*(1-P)*max(0,1-hypot(X-W/2,Y-H/2)/hypot(W/2,H/2)));st(1,W/2+(X-W/2)*cos(ld(0))-(Y-H/2)*sin(ld(0)));st(2,H/2+(X-W/2)*sin(ld(0))+(Y-H/2)*cos(ld(0)));"
+             "(1-P)*A(ld(1),ld(2))+P*B(ld(1),ld(2))",
+    # like a strip of film: the old frame rolls up, a black bar, the new frame
+    "filmroll": "st(0,H*1.08*P*P*(3-2*P));if(lt(Y,H-ld(0)),A(X,Y+ld(0)),if(lt(Y,H*1.08-ld(0)),if(eq(PLANE,0),16,128),B(X,Y-(H*1.08-ld(0)))))",
+    "blackflash": "st(0,pow(1-abs(2*P-1),3));((1-P)*A(X,Y)+P*B(X,Y))*(1-ld(0))+ld(0)*if(eq(PLANE,0),16,128)",
+    # a hard cut hidden in a shake / in a white flash
+    "shakecut": "st(0,sin(P*40)*W*0.03*(1-abs(2*P-1)));if(lt(P,0.5),A(X+ld(0),Y),B(X+ld(0),Y))",
+    "flashcut": "st(0,exp(-((P-0.5)/0.12)*((P-0.5)/0.12)));if(lt(P,0.5),A(X,Y),B(X,Y))*(1-ld(0))+ld(0)*if(eq(PLANE,0),235,128)",
+    # rows slide away one after another, each at its own moment
+    "slicesslide": "st(5,floor(Y/(H/12)));st(4,clip((P-(sin((ld(5)*7+3)*12.9898)*43758.5453-floor(sin((ld(5)*7+3)*12.9898)*43758.5453))*0.4)/0.6,0,1));st(4,ld(4)*ld(4)*(3-2*ld(4)));if(lt(X,W*(1-ld(4))),A(X+W*ld(4),Y),B(X-W*(1-ld(4)),Y))",
 }
 
 

@@ -37,6 +37,7 @@ async function edLoadPlan() {
   edMsg(); if (!typing) edPanel(); edDrawTL();      // never redraw the panel under the person typing in it
 }
 function edLoadImages() {
+  ED.plan.pics.filter(p => p.card).forEach(p => edLoadCard(p.card));
   const want = [ED.plan.logo];
   ED.plan.pics.forEach(p => { if (p.url) want.push(p.url); (p.parts || []).forEach(q => want.push(q.url)); });
   want.forEach(u => {
@@ -73,7 +74,7 @@ function edSizeStage() {
   let h, w;
   if (fs) { h = innerHeight; w = Math.round(h * ar); if (w > innerWidth) { w = innerWidth; h = Math.round(w / ar); } }
   else {
-    const room = innerHeight - tlH() - (ED.full ? 100 : 150), cardW = $e('s0').clientWidth - 48;
+    const room = innerHeight - tlH() - (ED.full ? 100 : 150), cardW = $e('s0').clientWidth - 48 - 84;   // 84: the play controls beside it
     h = Math.max(320, Math.min(side ? 640 : 1000, room)); w = Math.round(h * ar);
     const maxW = side ? cardW * 0.5 : cardW * 0.42;
     if (w > maxW) { w = Math.round(maxW); h = Math.round(w / ar); }
@@ -83,7 +84,7 @@ function edSizeStage() {
     if (over > 0 && h - over >= 320) { h = Math.round(h - over); w = Math.round(h * ar); }
   }
   $e('edPanel').style.maxHeight = (h + 56) + 'px';
-  if (!fs) $e('edLeft').style.width = w + 'px';
+  if (!fs) $e('edLeft').style.width = (w + 84) + 'px';
   box.style.width = w + 'px'; box.style.height = h + 'px';
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   const base = $e('edBase'); base.width = Math.round(w * dpr); base.height = Math.round(h * dpr);
@@ -94,6 +95,7 @@ function edSizeStage() {
   ED.small = ED.small || document.createElement('canvas');
   const ov = $e('edOver'), cw = P.canvas[0], ch = P.canvas[1];
   ov.style.width = gw + 'px'; ov.style.height = h + 'px';
+  const cd = $e('edCard'); cd.style.width = gw + 'px'; cd.style.height = h + 'px';
   const inner = $e('edInner'); inner.style.width = cw + 'px'; inner.style.height = ch + 'px'; inner.style.transform = `scale(${gw / cw})`;
   ED.lastScreen = null; edLogo();
 }
@@ -103,6 +105,7 @@ function edLogo(live) {
   if (!ED.plan) return;
   if (live) ED.logoLive = true;
   const L = edLook(), lg = ED.imgs[ED.plan.logo];
+  if (L.logo_show === false) { $e('edLogo').innerHTML = ''; return; }   // switched off
   const typed = logoHtml(Object.assign({}, L, { logo_mode: 'text', logo_size: L.logo_size * ED.plan.canvas[0] / 1080 }));
   if (!ED.logoLive && lg && lg.ok)      // the drawn name, plus an invisible typed copy that tells where the name is for dragging
     $e('edLogo').innerHTML = `<div id="edLogoHit" style="opacity:0">${typed}</div><img src="${ED.plan.logo}" style="position:absolute;left:0;top:0;width:100%;height:100%">`;
@@ -196,7 +199,9 @@ function edPartLayer(q, local) {
   return { tex, z: mo.z, x: mo.x, y: mo.y, m: m && m.m, o: m && m.o, v: q.v, n: q.grain, seed: q.s * 7 };
 }
 function edPicLayer(p, t) {        // the picture's own frame at time t (inside an interlude, possibly a transition between two pictures)
-  if (!p.parts) { const mo = FX.cardMotion(t - p.start); return [{ tex: edTex(p.url, 0), ...mo }, null, null, 0]; }
+  if (!p.parts) { const mo = FX.cardMotion(t - p.start); ED.lastPic = ED.lastPic || {};
+    let tex = edTex(p.url, 0); if (tex) ED.lastPic[p.kind] = p.url; else if (ED.lastPic[p.kind]) tex = edTex(ED.lastPic[p.kind], 0);   // a redrawn card still loading: the last one meanwhile
+    return [{ tex, ...mo }, null, null, 0]; }
   const local = t - p.start, ps = p.parts;
   for (let j = ps.length - 1; j >= 1; j--) {
     if (local >= ps[j].s && local < ps[j].s + ps[j].din) return [edPartLayer(ps[j - 1], local), edPartLayer(ps[j], local), ps[j].tin, (local - ps[j].s) / ps[j].din];
@@ -205,7 +210,7 @@ function edPicLayer(p, t) {        // the picture's own frame at time t (inside 
   return [edPartLayer(ps[0], local), null, null, 0];
 }
 function edPictures(t, frame) {
-  const P = ED.plan, cv = $e('edGL');
+  const P = ED.plan, cv = $e('edGL'); ED.cardOn = null;
   const p = P.pics.find(x => t >= x.start && t < x.end);
   if (!p) { cv.style.visibility = 'hidden'; return; }
   if (!ED.stage) { try { ED.stage = new FX.Stage(cv); } catch (e) { ED.err = e.message; edMsg(); return; } }
@@ -217,6 +222,13 @@ function edPictures(t, frame) {
     const c = ED.panelL = ED.panelL || document.createElement('canvas'); c.width = ED.panel.width; c.height = ED.panel.height;
     const g = c.getContext('2d'); g.drawImage(ED.panel, 0, 0); g.drawImage(lg.im, 0, 0, c.width, c.height);
     return { tex: ED.stage.layer(c, null, 0) }; };
+  const still = !(p.tin && t < p.start + p.din) && !(p.tout && t >= p.end - p.dout);
+  ED.lastCard = ED.lastCard || {};
+  const cardUrl = p.card && (edCardReady(p) ? (ED.lastCard[p.kind] = p.card) : ED.lastCard[p.kind]);
+  if (cardUrl && still) {                       // a card, standing: background here, text pieces as pictures above (edCardEls)
+    const cd = ED.cards[cardUrl], mo = FX.cardMotion(t - p.start);
+    a.tex = edTex(cd.bg, 0) || a.tex; ED.cardOn = { p: Object.assign({}, p, { card: cardUrl }), z: mo.z };
+  }
   if (p.tin && t < p.start + p.din) {           // her video -> the picture
     const pic = b ? a : a;                       // (a part-to-part transition never overlaps the way in)
     ED.stage.draw(video(), pic, p.tin, (t - p.start) / p.din, frame);
@@ -236,13 +248,13 @@ function edFrame() {
   if (!v.paused && t >= P.clip[1]) { v.pause(); v.currentTime = P.clip[1] - 0.05; }
   if (!edDrawBase()) return;
   const frame = Math.floor(t * 30);
-  edLyrics(t); edTexts(t); edPictures(t, frame); edEffects(t);
+  edLyrics(t); edTexts(t); edPictures(t, frame); edCardEls(); edEffects(t);
   if (ED.pop && performance.now() - (ED.popAt || 0) > 300) { ED.popAt = performance.now(); edPopFollow(); }
   const f = P.fade, a = P.clip[0], b = P.clip[1];
   $e('edFade').style.opacity = f > 0 ? Math.max(0, 1 - Math.min((t - a) / f, (b - t) / f)) : 0;
   // a clock with a fixed shape (m:ss.t), changed only when it changes: a clock that grows and shrinks shifts the tool row
-  const clk = clock(t) + ' / ' + clock(P.dur), play = v.paused ? '▶ Play' : '❚❚ Pause';
-  if (clk !== ED.clk) { ED.clk = clk; $e('edTime').textContent = clk; }
+  const clk = clock(t) + ' / ' + clock(P.dur), play = v.paused ? '▶' : '❚❚';
+  if (clk !== ED.clk) { ED.clk = clk; $e('edTime').textContent = clock(t); $e('edDur').textContent = '/ ' + clock(P.dur); }
   if (play !== ED.playTxt) { ED.playTxt = play; $e('edPlay').textContent = play; }
   if (document.fullscreenElement) { $e('edMaxTime').textContent = clk; const sk = $e('edMaxSeek'); sk.max = P.dur; if (document.activeElement !== sk) sk.value = t; $e('edMaxPlay').textContent = v.paused ? '▶' : '❚❚'; }
   if (!v.paused || ED.tlDirty) { edDrawTL(); ED.tlDirty = false; }
@@ -270,18 +282,18 @@ function edMsg() {
 }
 
 // ---------- timeline ----------
-const TL = { ruler: 20, wave: 28, eff: 20, txt: 22, vid: 22, lyr: 32, pic: 36, pad: 4 };
+const TL = { ruler: 20, wave: 30, eff: 22, txt: 22, vid: 24, lyr: 32, pic: 36, pad: 5 };
 function tlH() { return TL.ruler + TL.wave + TL.eff + TL.txt + TL.vid + TL.lyr + TL.pic + TL.pad * 6; }
-function tlX(t) { return t * ED.pxs - ED.scroll; }
-function tlT(x) { return (x + ED.scroll) / ED.pxs; }
-function edFit() { const P = ED.plan; if (!P) return; ED.pxs = Math.max(0.5, ($e('edTLWrap').clientWidth - 4) / P.dur); edTLSize(); }
+function tlX(t) { return GUT + t * ED.pxs - ED.scroll; }
+function tlT(x) { return (x - GUT + ED.scroll) / ED.pxs; }
+function edFit() { const P = ED.plan; if (!P) return; ED.pxs = Math.max(0.5, ($e('edTLWrap').clientWidth - GUT - 8) / P.dur); edTLSize(); }
 function edZoom(f) {
   const w = $e('edTLWrap'), P = ED.plan; if (!P) return;
   const tc = ED.vid.currentTime, before = tlX(tc);
-  ED.pxs = Math.max(w.clientWidth / P.dur, Math.min(400, ED.pxs * f)); edTLSize();
-  w.scrollLeft = Math.max(0, tc * ED.pxs - before); edDrawTL();
+  ED.pxs = Math.max((w.clientWidth - GUT - 8) / P.dur, Math.min(400, ED.pxs * f)); edTLSize();
+  w.scrollLeft = Math.max(0, GUT + tc * ED.pxs - before); edDrawTL();
 }
-function edTLSize() { const P = ED.plan; if (!P) return; $e('edTLSpace').style.width = Math.ceil(P.dur * ED.pxs) + 'px'; edDrawTL(); }
+function edTLSize() { const P = ED.plan; if (!P) return; $e('edTLSpace').style.width = Math.ceil(GUT + 8 + P.dur * ED.pxs) + 'px'; edDrawTL(); }
 function tlRows() { const y0 = TL.ruler, ye = y0 + TL.wave + TL.pad, yt = ye + TL.eff + TL.pad, yv = yt + TL.txt + TL.pad, y1 = yv + TL.vid + TL.pad, y2 = y1 + TL.lyr + TL.pad;
   return { wave: [y0, TL.wave], eff: [ye, TL.eff], txt: [yt, TL.txt], vid: [yv, TL.vid], lyr: [y1, TL.lyr], pic: [y2, TL.pic] }; }
 function edEff(i) { return effTimes(i); }
@@ -322,108 +334,119 @@ function edSplit() {
 }
 function edJoin(k) { const v = vcCfg(); v.cuts.sort((a, b) => a - b); v.cuts.splice(k, 1); v.fx.splice(k + 1, 1); mark(); edSelect({ kind: 'clip', k }); }
 function toastEd(m) { const e = $e('edToast'); if (!e) return; e.textContent = m; e.style.opacity = 1; clearTimeout(ED.toastT); ED.toastT = setTimeout(() => e.style.opacity = 0, 3500); }
+// the layers of the timeline: name, icon and colour (lane tint, blocks, name tag)
+const TRK = { wave: ['🎵', 'Song', '#8b7fc0'], eff: ['💥', 'Effects', '#f0a020'], txt: ['🅣', 'Text', '#2b8fe6'], vid: ['🎬', 'Video', '#4b63d8'],
+  lyr: ['🎤', 'Lyrics', '#9a52e8'], pic: ['🖼️', 'Pictures', '#14a593'] };
+const GUT = 92;                     // the fixed column with the layer names
+function shade(hx, f) {             // lighter (f > 0, towards white) or darker (f < 0, towards black)
+  const c = [1, 3, 5].map(i => parseInt(hx.slice(i, i + 2), 16)); return hex(...c.map(v => f > 0 ? v + (255 - v) * f : v * (1 + f)));
+}
+function blockDraw(g, x, y, w, h, col, on, label, ink) {   // a rounded block with a soft top light, an edge and a shadow
+  g.save(); g.shadowColor = 'rgba(30,10,60,.28)'; g.shadowBlur = 5; g.shadowOffsetY = 1.5;
+  const gr = g.createLinearGradient(0, y, 0, y + h); gr.addColorStop(0, shade(col, .28)); gr.addColorStop(1, col);
+  g.fillStyle = gr; rr(g, x, y, w, h, 6); g.fill(); g.restore();
+  g.strokeStyle = shade(col, -.25); g.lineWidth = 1; rr(g, x + .5, y + .5, w - 1, h - 1, 6); g.stroke();
+  if (on) { g.save(); g.shadowColor = '#ff2d6f'; g.shadowBlur = 8; g.strokeStyle = '#fff'; g.lineWidth = 2.5; rr(g, x, y, w, h, 6); g.stroke(); g.restore(); g.strokeStyle = '#ff2d6f'; g.lineWidth = 1.2; rr(g, x - 1.5, y - 1.5, w + 3, h + 3, 7); g.stroke(); }
+  if (label && w > 26) { g.save(); g.beginPath(); g.rect(x + 4, y, w - 8, h); g.clip(); g.fillStyle = ink || '#fff'; g.font = '700 11.5px Manrope,sans-serif';
+    g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = ink ? 0 : 2; g.fillText(label, x + 7, y + h / 2 + 4); g.restore(); }
+}
 function edDrawTL() {
   const cv = $e('edTL'), wrap = $e('edTLWrap'); if (!cv || !ED.open) return;
   const P = ED.plan, W = wrap.clientWidth, H = tlH(), dpr = Math.min(2, window.devicePixelRatio || 1);
   if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.width = W + 'px'; cv.style.height = H + 'px'; }
   ED.scroll = wrap.scrollLeft;
   const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
-  const cs = getComputedStyle(document.body), ink = cs.color;
+  const cs = getComputedStyle(document.body), ink = cs.color, dark = matchMedia('(prefers-color-scheme: dark)').matches && document.documentElement.dataset.theme !== 'light';
   if (!P || !P.ready) { g.fillStyle = ink; g.font = '15px Manrope,sans-serif'; g.fillText(ED.err || 'Loading…', 12, 40); return; }
-  const R = tlRows(), t0 = tlT(0), t1 = tlT(W), sel0 = ED.sel;
-  // ruler
-  const steps = [1, 2, 5, 10, 15, 30, 60], step = steps.find(s => s * ED.pxs >= 70) || 60;
-  g.font = '12px Manrope,sans-serif'; g.fillStyle = ink;
-  for (let t = Math.floor(t0 / step) * step; t <= t1; t += step) { const x = tlX(t); g.globalAlpha = .45; g.fillRect(x, 0, 1, 8); g.globalAlpha = .8; g.fillText(fmt(t), x + 3, 17); }
+  const R = tlRows(), t0 = Math.max(0, tlT(GUT)), t1 = tlT(W), sel0 = ED.sel, sel = sel0;
+  // lanes: each layer tinted in its own colour, with a thin line between layers
+  Object.entries(R).forEach(([k, [y, h]]) => { g.fillStyle = TRK[k][2] + (dark ? '22' : '14'); g.fillRect(GUT, y - TL.pad / 2, W - GUT, h + TL.pad);
+    g.fillStyle = TRK[k][2] + '40'; g.fillRect(GUT, y + h + TL.pad / 2 - .5, W - GUT, 1); });
+  // ruler: seconds with small ticks between
+  g.fillStyle = dark ? 'rgba(255,255,255,.05)' : 'rgba(80,40,140,.05)'; g.fillRect(GUT, 0, W - GUT, TL.ruler);
+  const steps = [1, 2, 5, 10, 15, 30, 60], step = steps.find(s => s * ED.pxs >= 70) || 60, minor = step / 5;
+  g.fillStyle = ink;
+  for (let t = Math.floor(t0 / minor) * minor; t <= t1; t += minor) { const x = tlX(t); if (x < GUT) continue; g.globalAlpha = .25; g.fillRect(x, TL.ruler - 5, 1, 5); }
+  g.font = '600 11px Manrope,sans-serif';
+  for (let t = Math.floor(t0 / step) * step; t <= t1; t += step) { const x = tlX(t); if (x < GUT) continue; g.globalAlpha = .5; g.fillRect(x, 4, 1, TL.ruler - 4); g.globalAlpha = .85; g.fillText(fmt(t), x + 4, 13); }
   g.globalAlpha = 1;
   // the part this video covers (the reel is a cut of the song)
   const [ca, cb] = P.clip;
-  g.fillStyle = 'rgba(0,0,0,.18)'; if (ca > 0) g.fillRect(tlX(0), TL.ruler, tlX(ca) - tlX(0), H); if (cb < P.dur) g.fillRect(tlX(cb), TL.ruler, tlX(P.dur) - tlX(cb), H);
-  // loudness and where the voice is
-  const [wy, wh] = R.wave;
-  g.fillStyle = 'rgba(127,127,160,.13)'; g.fillRect(0, wy, W, wh);
-  if (ED.peaks) { const pk = ED.peaks.peaks, rate = ED.peaks.rate; g.fillStyle = ink; g.globalAlpha = .45;
-    for (let x = 0; x < W; x++) { const a = Math.floor(tlT(x) * rate), b = Math.max(a + 1, Math.floor(tlT(x + 1) * rate)); let m = 0; for (let k = a; k < b && k < pk.length; k++) m = Math.max(m, pk[k]); const h = m / 100 * (wh - 10) / 2; g.fillRect(x, wy + wh / 2 - h, 1, Math.max(1, h * 2)); }
-    g.globalAlpha = 1; }
-  g.fillStyle = 'rgba(34,205,185,.95)'; (P.voice || []).forEach(([a, b]) => { if (b < t0 || a > t1) return; g.fillRect(tlX(a), wy + wh - 5, Math.max(1, tlX(b) - tlX(a)), 4); });
+  g.fillStyle = 'rgba(0,0,0,.2)'; if (ca > 0) g.fillRect(tlX(0), TL.ruler, tlX(ca) - tlX(0), H); if (cb < P.dur) g.fillRect(tlX(cb), TL.ruler, tlX(P.dur) - tlX(cb), H);
+  // the song: loudness, and where her voice is
+  const [wy, wh] = R.wave, wc = TRK.wave[2];
+  if (ED.peaks) { const pk = ED.peaks.peaks, rate = ED.peaks.rate, gr = g.createLinearGradient(0, wy, 0, wy + wh); gr.addColorStop(0, shade(wc, .2)); gr.addColorStop(.5, wc); gr.addColorStop(1, shade(wc, .2)); g.fillStyle = gr;
+    for (let x = GUT; x < W; x++) { const a = Math.floor(tlT(x) * rate), b = Math.max(a + 1, Math.floor(tlT(x + 1) * rate)); let m = 0; for (let k = a; k < b && k < pk.length; k++) m = Math.max(m, pk[k]); const h = m / 100 * (wh - 8) / 2; g.fillRect(x, wy + wh / 2 - 2 - h, 1, Math.max(1, h * 2)); } }
+  g.fillStyle = '#20c9b5'; (P.voice || []).forEach(([a, b]) => { if (b < t0 || a > t1) return; const x = Math.max(GUT, tlX(a)); rr(g, x, wy + wh - 4, Math.max(2, tlX(b) - x), 3, 2); g.fill(); });
   // effects
   const [ey, eh] = R.eff;
-  g.fillStyle = 'rgba(127,127,160,.08)'; g.fillRect(0, ey, W, eh);
   (S.config.effects || []).forEach((e, k) => { if (e.end < t0 || e.start > t1) return;
-    const x = tlX(e.start), w = Math.max(4, tlX(e.end) - x), on = sel0 && sel0.kind === 'effect' && sel0.k === k;
-    g.fillStyle = 'rgba(245,170,30,.95)'; rr(g, x, ey + 2, w, eh - 4, 5); g.fill();
-    if (on) { g.strokeStyle = '#fff'; g.lineWidth = 3; g.stroke(); g.strokeStyle = '#ff2d6f'; g.lineWidth = 1.5; g.stroke(); }
-    if (w > 24) { g.save(); g.beginPath(); g.rect(x + 3, ey, w - 6, eh); g.clip(); g.fillStyle = '#3a2000'; g.font = 'bold 11.5px Manrope,sans-serif';
-      g.fillText((EFF_ICON[e.type] || '') + ' ' + ((FX_EFF[e.type] || {}).label || e.type), x + 5, ey + eh / 2 + 4); g.restore(); } });
+    const x = tlX(e.start), w = Math.max(4, tlX(e.end) - x);
+    blockDraw(g, x, ey + 1, w, eh - 2, TRK.eff[2], sel0 && sel0.kind === 'effect' && sel0.k === k, (EFF_ICON[e.type] || '') + ' ' + ((FX_EFF[e.type] || {}).label || e.type), '#3a2200'); });
   // free text
   const [ty, th] = R.txt;
-  g.fillStyle = 'rgba(127,127,160,.08)'; g.fillRect(0, ty, W, th);
   (S.config.texts || []).forEach((x, k) => { if (x.end < t0 || x.start > t1) return;
-    const xx = tlX(x.start), w = Math.max(4, tlX(x.end) - xx), on = sel0 && sel0.kind === 'text' && sel0.k === k;
-    g.fillStyle = 'rgba(40,150,240,.92)'; rr(g, xx, ty + 2, w, th - 4, 5); g.fill();
-    if (on) { g.strokeStyle = '#fff'; g.lineWidth = 3; g.stroke(); g.strokeStyle = '#ff2d6f'; g.lineWidth = 1.5; g.stroke(); }
-    if (w > 24) { g.save(); g.beginPath(); g.rect(xx + 3, ty, w - 6, th); g.clip(); g.fillStyle = '#fff'; g.font = 'bold 11.5px Manrope,sans-serif'; g.fillText('🅣 ' + (x.lines || [''])[0], xx + 5, ty + th / 2 + 4); g.restore(); } });
-  // her video, in clips
+    const xx = tlX(x.start), w = Math.max(4, tlX(x.end) - xx);
+    blockDraw(g, xx, ty + 1, w, th - 2, TRK.txt[2], sel0 && sel0.kind === 'text' && sel0.k === k, '🅣 ' + (x.lines || [''])[0]); });
+  // her video, in parts
   const [vy, vh] = R.vid;
   edClips().forEach(c => { if (c.end < t0 || c.start > t1) return;
-    const x = tlX(c.start), w = Math.max(3, tlX(c.end) - x), on = sel0 && sel0.kind === 'clip' && sel0.k === c.k;
-    g.fillStyle = c.plain ? 'rgba(90,90,120,.55)' : 'rgba(60,110,220,.85)'; rr(g, x + 1, vy + 2, w - 2, vh - 4, 5); g.fill();
-    if (on) { g.strokeStyle = '#fff'; g.lineWidth = 3; g.stroke(); g.strokeStyle = '#ff2d6f'; g.lineWidth = 1.5; g.stroke(); }
-    if (w > 40) { g.save(); g.beginPath(); g.rect(x + 4, vy, w - 8, vh); g.clip(); g.fillStyle = '#fff'; g.font = 'bold 11.5px Manrope,sans-serif';
-      const f = c.fx, lab = [(FX.FILTERS && FX.FILTERS[f.filter] && f.filter !== 'original') ? FX.FILTERS[f.filter].label : '', f.motion && f.motion !== 'still' && FX.MOTIONS[f.motion] ? FX.MOTIONS[f.motion].label : ''].filter(Boolean).join(' · ') || 'her video';
-      g.fillText('🎬 ' + lab, x + 7, vy + vh / 2 + 4); g.restore(); } });
-  edClips().slice(1).forEach(c => { const x = tlX(c.start); g.fillStyle = '#fff'; g.fillRect(x - 1.5, vy, 3, vh); g.fillStyle = '#ff2d6f'; g.beginPath(); g.arc(x, vy + vh / 2, 4, 0, 7); g.fill(); });
-  // lyric screens
+    const x = tlX(c.start), w = Math.max(3, tlX(c.end) - x), f = c.fx;
+    const lab = [(FX.FILTERS && FX.FILTERS[f.filter] && f.filter !== 'original') ? FX.FILTERS[f.filter].label : '', f.motion && f.motion !== 'still' && FX.MOTIONS[f.motion] ? FX.MOTIONS[f.motion].label : ''].filter(Boolean).join(' · ') || 'her video';
+    blockDraw(g, x + 1, vy + 1, w - 2, vh - 2, c.plain ? shade(TRK.vid[2], .35) : TRK.vid[2], sel0 && sel0.kind === 'clip' && sel0.k === c.k, '🎬 ' + lab); });
+  edClips().slice(1).forEach(c => { const x = tlX(c.start); g.fillStyle = '#fff'; g.fillRect(x - 1.5, vy - 1, 3, vh + 2); g.fillStyle = '#ff2d6f'; g.beginPath(); g.arc(x, vy + vh / 2, 4.5, 0, 7); g.fill(); });
+  // lyric screens (orange: moved by you, pink: added); taken out: a faint dashed outline, click to bring back
   const [ly, lh] = R.lyr;
-  g.fillStyle = 'rgba(127,127,160,.10)'; g.fillRect(0, ly, W, lh);
-  const sel = ED.sel;
-  edScreens(true).filter(s => s.off).forEach(s => { if (s.end < t0 || s.start > t1) return;      // taken out: a faint outline, click to bring back
-    const x = tlX(s.start), w = Math.max(3, tlX(s.end) - x); g.setLineDash([4, 3]); g.strokeStyle = 'rgba(150,80,235,.7)'; g.lineWidth = 1.5; rr(g, x + 1, ly + 5, w - 2, lh - 10, 6); g.stroke(); g.setLineDash([]);
-    if (w > 30) { g.fillStyle = 'rgba(150,80,235,.9)'; g.font = '11px Manrope,sans-serif'; g.fillText('✕ ' + scrLabel(s), x + 6, ly + lh / 2 + 4); } });
+  edScreens(true).filter(s => s.off).forEach(s => { if (s.end < t0 || s.start > t1) return;
+    const x = tlX(s.start), w = Math.max(3, tlX(s.end) - x); g.setLineDash([4, 3]); g.strokeStyle = TRK.lyr[2] + 'b0'; g.lineWidth = 1.5; rr(g, x + 1, ly + 4, w - 2, lh - 8, 6); g.stroke(); g.setLineDash([]);
+    if (w > 30) { g.fillStyle = TRK.lyr[2]; g.font = '11px Manrope,sans-serif'; g.fillText('✕ ' + scrLabel(s), x + 6, ly + lh / 2 + 4); } });
   tlScreens().forEach(s => { if (s.end < t0 || s.start > t1) return;
-    const x = tlX(s.start), w = Math.max(3, tlX(s.end) - x), on = sel && sel.kind === 'screen' && sel.i === s.i;
-    g.fillStyle = s.added ? 'rgba(220,60,130,.92)' : s.manual ? 'rgba(224,150,0,.92)' : 'rgba(150,80,235,.92)'; rr(g, x, ly + 3, w, lh - 6, 6); g.fill();
-    if (on) { g.strokeStyle = '#fff'; g.lineWidth = 3; g.stroke(); g.strokeStyle = '#ff2d6f'; g.lineWidth = 1.5; g.stroke(); }
-    g.fillStyle = 'rgba(255,255,255,.85)'; g.fillRect(x + 1, ly + 10, 2, lh - 20); g.fillRect(x + w - 3, ly + 10, 2, lh - 20);
-    if (w > 22) { g.save(); g.beginPath(); g.rect(x + 5, ly, w - 10, lh); g.clip(); g.fillStyle = '#fff'; g.font = 'bold 12px Manrope,sans-serif';
-      g.fillText(scrLabel(s) + '  ' + (s.lines[0] || ''), x + 7, ly + lh / 2 + 4); g.restore(); } });
+    const x = tlX(s.start), w = Math.max(3, tlX(s.end) - x);
+    blockDraw(g, x, ly + 2, w, lh - 4, s.added ? '#dc3c82' : s.manual ? '#e0960a' : TRK.lyr[2], sel && sel.kind === 'screen' && sel.i === s.i, scrLabel(s) + '  ' + (s.lines[0] || ''));
+    g.fillStyle = 'rgba(255,255,255,.75)'; if (w > 14) { g.fillRect(x + 2, ly + 10, 2, lh - 20); g.fillRect(x + w - 4, ly + 10, 2, lh - 20); } });
   // pictures: cards and interludes
   const [py, ph] = R.pic;
-  g.fillStyle = 'rgba(127,127,160,.10)'; g.fillRect(0, py, W, ph);
   P.pics.forEach(p => { if (p.end < t0 || p.start > t1) return;
     const x = tlX(p.start), w = Math.max(3, tlX(p.end) - x), on = sel && ((sel.kind === 'interlude' && sel.n === p.n && p.kind === 'interlude') || (sel.kind === p.kind && p.kind !== 'interlude'));
-    g.fillStyle = p.kind === 'interlude' ? 'rgba(20,170,150,.9)' : 'rgba(230,120,30,.9)'; rr(g, x, py + 3, w, ph - 6, 6); g.fill();
+    blockDraw(g, x, py + 2, w, ph - 4, p.kind === 'interlude' ? TRK.pic[2] : '#e2782a', on, '');
     (p.parts || [{ url: p.url, s: 0, e: p.end - p.start }]).forEach((q, j) => {
       const it = ED.imgs[q.url], qx = tlX(p.start + q.s), qw = tlX(p.start + q.e) - qx;
-      if (it && it.ok && qw > 16) { const tw = Math.min(qw - 6, (ph - 12) * 9 / 16); g.save(); g.beginPath(); rr(g, qx + 3, py + 6, tw, ph - 12, 4); g.clip(); coverDraw(g, it.im, it.im.width, it.im.height, qx + 3, py + 6, tw, ph - 12); g.restore(); }
-      if (j && p.kind === 'interlude') { const xb = tlX(p.start + partBound(p, j)); g.fillStyle = '#fff'; g.fillRect(xb - 1.5, py + 2, 3, ph - 4); g.beginPath(); g.arc(xb, py + ph / 2, 4.5, 0, 7); g.fill(); } });   // the line between two pictures: drag it
-    if (on) { rr(g, x, py + 3, w, ph - 6, 6); g.strokeStyle = '#fff'; g.lineWidth = 3; g.stroke(); g.strokeStyle = '#ff2d6f'; g.lineWidth = 1.5; g.stroke(); }
-    g.fillStyle = 'rgba(255,255,255,.85)'; if (p.kind !== 'opening') g.fillRect(x + 1, py + 12, 2, ph - 24); if (p.kind !== 'ending') g.fillRect(x + w - 3, py + 12, 2, ph - 24);
+      if (it && it.ok && qw > 16) { const tw = Math.min(qw - 6, (ph - 10) * 9 / 16); g.save(); g.beginPath(); rr(g, qx + 4, py + 5, tw, ph - 10, 4); g.clip(); coverDraw(g, it.im, it.im.width, it.im.height, qx + 4, py + 5, tw, ph - 10); g.restore(); }
+      if (j && p.kind === 'interlude') { const xb = tlX(p.start + partBound(p, j)); g.fillStyle = '#fff'; g.fillRect(xb - 1.5, py + 1, 3, ph - 2); g.beginPath(); g.arc(xb, py + ph / 2, 4.5, 0, 7); g.fill(); } });   // the line between two pictures: drag it
     const lab = p.kind === 'opening' ? 'Opening card' : p.kind === 'ending' ? 'End card' : `Interlude${(p.parts || []).length > 1 ? ' · ' + p.parts.length + ' pictures' : ''}`;
-    if (w > 70) { g.save(); g.beginPath(); g.rect(x, py, w, ph); g.clip(); g.fillStyle = '#fff'; g.font = 'bold 12px Manrope,sans-serif'; g.shadowColor = '#000'; g.shadowBlur = 4;
-      g.fillText(lab, x + Math.min(w - 60, (ph - 12) * 9 / 16 + 10), py + ph / 2 + 4); g.restore(); } });
-  g.fillStyle = ink; g.globalAlpha = .7; g.font = '11px Manrope,sans-serif';
-  g.fillText('effects', 4, ey - 1); g.fillText('text', 4, ty - 1); g.fillText('video', 4, vy - 1); g.fillText('lyrics', 4, ly - 1); g.fillText('pictures', 4, py - 1); g.globalAlpha = 1;
+    if (w > 70) { g.save(); g.beginPath(); g.rect(x, py, w, ph); g.clip(); g.fillStyle = '#fff'; g.font = '700 11.5px Manrope,sans-serif'; g.shadowColor = '#000'; g.shadowBlur = 4;
+      g.fillText(lab, x + Math.min(w - 60, (ph - 10) * 9 / 16 + 12), py + ph / 2 + 4); g.restore(); } });
   // pictures and cards switched off: faint outlines (click to bring back); transitions: small diamonds (click to change or delete)
-  g.setLineDash([4, 3]); g.lineWidth = 1.5; g.strokeStyle = 'rgba(20,170,150,.8)';
-  edOffPics().forEach(o => { const x = tlX(o.start), w = Math.max(4, tlX(o.end) - x); rr(g, x + 1, py + 5, w - 2, ph - 10, 6); g.stroke();
-    if (w > 40) { g.fillStyle = 'rgba(20,150,130,.95)'; g.font = '11px Manrope,sans-serif'; g.fillText('✕ ' + o.label, x + 6, py + ph / 2 + 4); } });
+  g.setLineDash([4, 3]); g.lineWidth = 1.5; g.strokeStyle = TRK.pic[2] + 'c0';
+  edOffPics().forEach(o => { const x = tlX(o.start), w = Math.max(4, tlX(o.end) - x); rr(g, x + 1, py + 4, w - 2, ph - 8, 6); g.stroke();
+    if (w > 40) { g.fillStyle = TRK.pic[2]; g.font = '11px Manrope,sans-serif'; g.fillText('✕ ' + o.label, x + 6, py + ph / 2 + 4); } });
   g.setLineDash([]);
-  edTransList().forEach(c => { const x = tlX(c.at), on = sel0 && sel0.kind === 'trans' && sel0.key === c.key; if (x < -8 || x > W + 8) return;
-    g.save(); g.translate(x, py + ph - 2); g.rotate(Math.PI / 4); g.fillStyle = c.name === 'cut' ? '#888' : '#fff'; g.strokeStyle = on ? '#ff2d6f' : '#1f1a33'; g.lineWidth = on ? 3 : 1.5;
+  edTransList().forEach(c => { const x = tlX(c.at), on = sel0 && sel0.kind === 'trans' && sel0.key === c.key; if (x < GUT - 8 || x > W + 8) return;
+    g.save(); g.translate(x, py + ph - 3); g.rotate(Math.PI / 4); g.fillStyle = c.name === 'cut' ? '#9a9a9a' : '#fff'; g.strokeStyle = on ? '#ff2d6f' : '#1f1a33'; g.lineWidth = on ? 3 : 1.5;
     g.fillRect(-6, -6, 12, 12); g.strokeRect(-6, -6, 12, 12); g.restore(); });
-  // playhead
-  const xh = tlX(ED.vid.currentTime || 0); g.fillStyle = '#ff2d6f'; g.fillRect(xh - 1, 0, 2, H); g.beginPath(); g.moveTo(xh - 6, 0); g.lineTo(xh + 6, 0); g.lineTo(xh, 8); g.fill();
+  // the layer names: a fixed column that does not scroll
+  g.fillStyle = getComputedStyle($e('edTLWrap')).backgroundColor || '#fff'; g.fillRect(0, 0, GUT, H);
+  g.fillStyle = dark ? 'rgba(255,255,255,.06)' : 'rgba(80,40,140,.06)'; g.fillRect(0, 0, GUT, H);
+  Object.entries(R).forEach(([k, [y, h]]) => { const [ic, nm, col] = TRK[k];
+    g.fillStyle = col; rr(g, 6, y + 1, 4, h - 2, 2); g.fill();
+    g.fillStyle = ink; g.font = '700 12px Manrope,sans-serif'; g.fillText(ic + ' ' + nm, 15, y + h / 2 + 4); });
+  g.fillStyle = TRK.lyr[2] + '55'; g.fillRect(GUT - 1, 0, 1, H);
+  // playhead, with its time
+  const tp = ED.vid.currentTime || 0, xh = tlX(tp);
+  if (xh >= GUT - 1) { g.fillStyle = '#ff2d6f'; g.fillRect(xh - 1, 0, 2, H);
+    if (!(ED.drag && ED.drag.label)) { const lab = clock(tp); g.font = '700 11px Manrope,sans-serif'; const tw = g.measureText(lab).width + 10, lx = Math.max(GUT, Math.min(W - tw - 2, xh - tw / 2));
+      g.fillStyle = '#ff2d6f'; rr(g, lx, 1, tw, TL.ruler - 3, 5); g.fill(); g.fillStyle = '#fff'; g.fillText(lab, lx + 5, 13); } }
   // follow the playhead while playing
-  if (!ED.vid.paused && !ED.drag && (xh > W - 40 || xh < 0)) { wrap.scrollLeft = Math.max(0, ED.vid.currentTime * ED.pxs - 60); }
+  if (!ED.vid.paused && !ED.drag && (xh > W - 40 || xh < GUT)) { wrap.scrollLeft = Math.max(0, tp * ED.pxs - 60); }
   if (ED.drag && ED.drag.label) { const d = ED.drag; g.font = 'bold 13px Manrope,sans-serif'; const tw = g.measureText(d.label).width + 14;
-    const lx = Math.max(2, Math.min(W - tw - 2, d.lx - tw / 2)); g.fillStyle = '#1f1a33'; rr(g, lx, d.ly - 26, tw, 22, 6); g.fill(); g.fillStyle = '#fff'; g.fillText(d.label, lx + 7, d.ly - 10); }
+    const lx = Math.max(GUT, Math.min(W - tw - 2, d.lx - tw / 2)); g.fillStyle = '#1f1a33'; rr(g, lx, d.ly - 26, tw, 22, 6); g.fill(); g.fillStyle = '#fff'; g.fillText(d.label, lx + 7, d.ly - 10); }
 }
 function rr(g, x, y, w, h, r) { g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, Math.min(r, w / 2)) : g.rect(x, y, w, h); }
 
 // what is under the pointer on the timeline
 function tlHit(x, y) {
-  const R = tlRows(), t = tlT(x), edge = 9;
+  const R = tlRows(), t = Math.max(0, tlT(x)), edge = 9;
+  if (x < GUT) return { kind: 'time', t: ED.vid.currentTime, zone: 'none', gutter: true };
   const inRow = r => y >= R[r][0] && y < R[r][0] + R[r][1];
   if (inRow('txt')) for (let k = (S.config.texts || []).length - 1; k >= 0; k--) { const e = S.config.texts[k], a = tlX(e.start), b = tlX(e.end);
     if (x >= a - 3 && x <= b + 3) return { kind: 'text', k, e, zone: x - a < edge && b - a > 2 * edge ? 'start' : b - x < edge && b - a > 2 * edge ? 'end' : 'move' }; }
@@ -458,14 +481,14 @@ function tlDown(ev) {
   const h = tlHit(x, y); cv.setPointerCapture(ev.pointerId);
   const blk = h.p || h.e;
   ED.drag = { h, x0: x, moved: false, lx: x, ly: y, s0: blk ? blk.start : null, e0: blk ? blk.end : null };   // where the block was when the drag began
-  if (h.kind === 'time') { edSeek(tlT(x)); ED.drag.scrub = true; }
+  if (h.kind === 'time' && !h.gutter) { edSeek(tlT(x)); ED.drag.scrub = true; }
 }
 function tlMove(ev) {
   const cv = $e('edTL'), r = cv.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
   const d = ED.drag;
   if (!d) { const h = tlHit(x, y); cv.style.cursor = h.kind === 'time' ? 'pointer' : h.zone === 'move' ? 'grab' : h.zone === 'none' ? 'pointer' : 'ew-resize'; return; }
   d.lx = x; d.ly = y;
-  if (d.scrub) { edSeek(tlT(x)); return; }
+  if (d.scrub) { edSeek(Math.max(0, tlT(x))); return; }
   if (!d.moved && Math.abs(x - d.x0) < 4) return;
   d.moved = true; cv.style.cursor = d.h.zone === 'move' ? 'grabbing' : 'ew-resize';
   const dt = (x - d.x0) / ED.pxs, h = d.h;
@@ -582,13 +605,35 @@ function edPanel() {
       <div class="hint" style="margin-top:8px">Split her video (✂) to give each part its own filter and motion. Drag a cut (the white line on the video row) to move it.</div>`;
     return;
   }
+  if (sel.kind === 'cardel') { box.innerHTML = edPiecePanel(sel); return; }
+  if (sel.kind === 'logo') {
+    const L = S.config.look, on = L.logo_show !== false;
+    box.innerHTML = `<h3 style="margin-top:0">✍️ Her name <small class="hint">on every video, at the top</small></h3>
+      <label class="switch"><input type="checkbox" ${on ? 'checked' : ''} onchange="S.config.look.logo_show=this.checked;mark();edLogo(true);edRefreshSoon(0);edPanel()"> Show her name on the video</label>
+      ${on ? `<label class="l" style="margin-top:8px">Words</label><input type="text" value="${esc(L.logo_text)}" oninput="S.config.look.logo_text=this.value;mark();edLogo(true);edRefreshSoon()">
+      <div class="popgrp">Font</div><div class="fonttiles">${fontList('script').map(f => `<div class="ftile ${f === L.logo_font ? 'on' : ''}" onclick="S.config.look.logo_font='${f.replace(/'/g, "\\'")}';mark();edLogo(true);edRefreshSoon();edPanel()"><b style="font-family:${fontCss(f)}">${esc((L.logo_text || 'Soujanya').split(' ')[0])}</b><small>${esc(f)}</small></div>`).join('')}</div>
+      <div class="row" style="margin-top:8px"><b>Size</b><button class="small" onclick="S.config.look.logo_size=Math.max(.06,+(S.config.look.logo_size-.02).toFixed(2));mark();edLogo(true);edRefreshSoon();edPanel()">−</button><b>${Math.round(L.logo_size * 100)}</b><button class="small" onclick="S.config.look.logo_size=Math.min(.6,+(S.config.look.logo_size+.02).toFixed(2));mark();edLogo(true);edRefreshSoon();edPanel()">+</button></div>
+      <div class="popgrp">Colours</div><div class="pals">${PAL.name.map(([n, v]) => `<div class="pal" style="min-width:76px;padding:5px" onclick="styleTab='name';pickPal('${n.replace(/'/g, "\\'")}');edLogo(true);edRefreshSoon();edPanel()"><i style="height:22px;background:linear-gradient(90deg,${v[0]},${v[1]},${v[2]})"></i><small>${n}</small></div>`).join('')}</div>
+      <div class="row" style="margin-top:8px"><button class="small" onclick="edNameHome()">Back to the usual place (top left)</button></div>
+      <div class="hint" style="margin-top:8px"><b>Drag her name on the picture</b> to place it anywhere (it shows on the whole video). More colour settings: step 6, “Her name”.</div>` : ''}
+      <div class="row" style="margin-top:8px"><button class="small" onclick="edSelect(null)">Done</button></div>`;
+    return;
+  }
   if (sel.kind === 'opening' || sel.kind === 'ending') {
-    const k = sel.kind;
-    box.innerHTML = `<h3 style="margin-top:0">${k === 'opening' ? 'Opening card' : 'End card'}</h3>
-      <div class="grid"><div><label class="l">Lasts (min:sec)</label>${tinp(`config.${k}.seconds`, 6, 92)}</div>
+    const k = sel.kind, O = S.credits.opening, lab = S.credits.labels[S.config.language] || ['', '', '', ''], E = S.credits.ending;
+    const fld = (path, label, v) => `<div><label class="l">${label}</label><input type="text" value="${esc(v || '')}" oninput="set('${path}',this.value);mark();edRefreshSoon()"></div>`;
+    box.innerHTML = `<h3 style="margin-top:0">${k === 'opening' ? 'Opening card' : 'End card'} <small class="hint">the card redraws a second after you type</small></h3>
+      ${k === 'opening' ? `<div class="grid" style="gap:8px">${fld('credits.opening.title_line', 'Title', O.title_line)}${fld('credits.opening.cover_by', 'Cover by', O.cover_by)}
+        ${fld('credits.opening.film', lab[0] || 'Film', O.film)}${fld('credits.opening.lyricist', lab[1] || 'Lyricist', O.lyricist)}${fld('credits.opening.music', lab[2] || 'Music', O.music)}${fld('credits.opening.singers', lab[3] || 'Singers', O.singers)}</div>
+        <details style="margin-top:6px"><summary style="cursor:pointer;font-weight:700">The words in front of each credit</summary><div class="grid" style="gap:8px">${lab.map((x, i) => `<div><label class="l">${['Film', 'Lyricist', 'Music', 'Singers'][i]}</label><input type="text" value="${esc(x)}" oninput="S.credits.labels[S.config.language][${i}]=this.value;mark();edRefreshSoon()"></div>`).join('')}</div></details>`
+      : `<div class="grid" style="gap:8px">${fld('credits.ending.name', 'Name', E.name)}</div>
+        <label class="l" style="margin-top:8px">Extra lines (one per line; “Label: words” shows as two lines)</label><textarea style="min-height:70px" oninput="S.credits.ending.extra_lines=this.value.split('\\n').map(x=>x.trim()).filter(Boolean);mark();edRefreshSoon()">${esc((E.extra_lines || []).join('\n'))}</textarea>
+        <label class="switch"><input type="checkbox" ${E.show_song_credits ? 'checked' : ''} onchange="S.credits.ending.show_song_credits=this.checked;mark();edRefreshSoon()"> Show the original song's credits under her name</label>`}
+      <div class="grid" style="margin-top:8px"><div><label class="l">Lasts (min:sec)</label>${tinp(`config.${k}.seconds`, 6, 92)}</div>
       <div><label class="l">Photo behind it</label><select data-path="config.${k}.photo" class="photoSel"></select></div></div>
-      <div class="hint">The words on the card are in step 7, the colours and fonts in step 6. Changes show here in a second or two (the card is drawn by the same code that makes the video).</div>
-      <div class="row"><button class="small" onclick="openCard(document.getElementById('s8'),true);document.getElementById('s8').scrollIntoView({behavior:'smooth'})">Go to step 7</button><button class="small" onclick="edDelete()">🗑 Delete card</button><button class="small" onclick="edSelect(null)">Done</button></div>`;
+      <div class="popgrp">Font of the card's words</div><div class="fonttiles">${fontList(k === 'opening' ? 'lang' : 'script').map(f => { const key = k === 'opening' ? 'credits_font' : 'end_font';
+        return `<div class="ftile ${f === S.config.look[key] ? 'on' : ''}" onclick="S.config.look.${key}='${f.replace(/'/g, "\\'")}';mark();edRefreshSoon();edPanel()"><b style="font-family:${fontCss(f)}">${esc((k === 'opening' ? (O.title_line || S.config.title || 'Title') : (E.name || 'Soujanya')).slice(0, 12))}</b><small>${esc(f)}</small></div>`; }).join('')}</div>
+      <div class="row" style="margin-top:8px"><button class="small" onclick="edDelete()">🗑 Delete card</button><button class="small" onclick="edSelect(null)">Done</button></div>`;
     $$('#edPanel [data-path]').forEach(bind); fillPhotoSelects(); return;
   }
   if (sel.kind === 'text') {
@@ -711,7 +756,7 @@ function edTextAt(ev) {             // the free text under the pointer, topmost 
   return null;
 }
 function edStageDown(ev) {
-  if (!ED.plan || ev.target.id === 'edInline') return;
+  if (!ED.plan || ev.target.id === 'edInline' || (ev.target.closest && ev.target.closest('.cardpiece'))) return;
   const tid = edTextAt(ev);
   if (tid) {                          // a free text: click selects it, drag places it
     ev.preventDefault(); const k = +tid.slice(1), box = $e('edOver').getBoundingClientRect(), p0 = Object.assign({ x: 0, y: 0.72 }, S.config.texts[k].pos), x0 = ev.clientX, y0 = ev.clientY; let moved = false;
@@ -727,7 +772,11 @@ function edStageDown(ev) {
   const onLogo = logoHit && ev.clientX >= logoHit.left && ev.clientX <= logoHit.right && ev.clientY >= logoHit.top && ev.clientY <= logoHit.bottom;
   const lyr = $e('edLyr').firstElementChild && $e('edLyr').firstElementChild.getBoundingClientRect();
   const onLyr = lyr && ev.clientY >= lyr.top && ev.clientY <= lyr.bottom;
-  if (!onLogo && !onLyr) return;
+  if (!onLogo && !onLyr) {            // a card on the picture: its words open on the left
+    const pc = (ED.plan.pics || []).find(q => q.kind !== 'interlude' && ED.vid.currentTime >= q.start && ED.vid.currentTime < q.end);
+    if (pc) { ED.vid.pause(); edSelect({ kind: pc.kind }); }
+    return;
+  }
   ev.preventDefault();
   const where = k => (o.look && k in o.look) ? o.look : S.config.look;         // a setting this video overrides is changed for this video
   const s = edScreenAt(ED.vid.currentTime), own = onLyr && s && ED.sel && ED.sel.kind === 'screen' && ED.sel.i === s.i;
@@ -741,7 +790,7 @@ function edStageDown(ev) {
     mark(); };
   let moved = false; const mv0 = mv; const mv2 = e => { if (Math.abs(e.clientX - x0) + Math.abs(e.clientY - y0) > 4) moved = true; if (moved) mv0(e); };
   const up = () => { document.removeEventListener('pointermove', mv2); document.removeEventListener('pointerup', up);
-    if (!moved) { if (onLyr && s) { ED.vid.pause(); edSelect({ kind: 'screen', i: s.i }); } return; }      // a click: select these words
+    if (!moved) { ED.vid.pause(); if (onLogo) edSelect({ kind: 'logo' }); else if (onLyr && s) edSelect({ kind: 'screen', i: s.i }); return; }      // a click: select it
     $$('[data-path]').forEach(bind); updatePreviews(); edRefreshSoon(); if (own) edPanel();
     toastEd(own ? 'Moved this screen only (its own place).' : onLogo ? 'Moved her name.' : 'Moved all lyrics. Click one screen first to move only that one.'); };
   document.addEventListener('pointermove', mv2); document.addEventListener('pointerup', up); return;
@@ -777,6 +826,14 @@ async function edOpen() {
   ED.open = true;
   await FX.load();
   FX_EFF = Object.fromEntries(FX.load_effects().map(e => [e.id, e]));
+  if (!ED.noiseTile) {                 // grey grain for the Noise and Retro DV effects (the builder adds random grain too)
+    const c = document.createElement('canvas'); c.width = c.height = 200; const g = c.getContext('2d'), im = g.createImageData(200, 200);
+    for (let i = 0; i < im.data.length; i += 4) { const v = 128 + (Math.random() - .5) * 255; im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = 255; }
+    g.putImageData(im, 0, 0); ED.noiseTile = c.toDataURL(); $e('edFxNoise').style.backgroundImage = `url(${ED.noiseTile})`;
+    // the warm light of "Light leak", as fx.overlay_png("leak"): strength (1 - d)^1.6, d = distance from the top-left corner / 1.2
+    const st = []; for (let i = 0; i <= 20; i++) { const d = i / 20, f = Math.pow(1 - d, 1.6); st.push(`rgba(255,150,60,${f.toFixed(4)}) ${(d * 1.2 / Math.SQRT2 * 100).toFixed(2)}%`); }
+    $e('edFxLeak').style.background = `radial-gradient(ellipse farthest-corner at 0 0, ${st.join(',')}, rgba(255,150,60,0))`;
+  }
   if (!ED.favs) edLoadFavs();
   if (!ED.vid) {
     ED.vid = $e('edVid');
@@ -786,6 +843,8 @@ async function edOpen() {
     $e('edTLWrap').addEventListener('scroll', () => edDrawTL());
     $e('edTLWrap').addEventListener('wheel', e => { if (e.ctrlKey || e.metaKey) { e.preventDefault(); edZoom(e.deltaY < 0 ? 1.25 : 0.8); } }, { passive: false });
     $e('edStage').addEventListener('pointerdown', edStageDown);
+    $e('edCard').addEventListener('pointerdown', edCardDown);
+    $e('edStage').addEventListener('pointermove', edHoverName); $e('edStage').addEventListener('pointerleave', () => { $e('edHover').style.display = 'none'; });
     $e('edStage').addEventListener('dblclick', edInline);
     window.addEventListener('resize', () => { if (ED.open && ED.plan) { edSizeStage(); edDrawTL(); } });
     document.addEventListener('keydown', ev => {
@@ -1028,13 +1087,15 @@ function edPicsHere() {
 
 // ---------- effects over a stretch of time: the same formulas as the builder's (fx.effect_chain), drawn with CSS/SVG on the whole picture ----------
 let FX_EFF = {};
-const EFF_ICON = { shake: '〰️', zoom: '🔍', glitch: '📺', flash: '⚡', dip: '🌑', strobe: '◐', invert: '🔄', rgb: '🌈', blur: '💭', oldfilm: '🎞️', vhs: '📼' };
+const EFF_ICON = { shake: '〰️', zoom: '🔍', glitch: '📺', flash: '⚡', dip: '🌑', strobe: '◐', invert: '🔄', rgb: '🌈', blur: '💭', oldfilm: '🎞️', vhs: '📼',
+  heartbeat: '💓', zoompunch: '👊', dizzy: '😵', swing: '🎐', earthquake: '🌋', rgbshake: '🔴', flicker: '💡', fadeinblack: '🌘', fadeoutblack: '🌒', fadeinwhite: '🌕', fadeoutwhite: '⬜',
+  lightleak: '🌅', spotlight: '🔦', rainbow: '🌈', bwfade: '🖤', contrast: '◑', noise: '📡', retrodv: '📹', letterbox: '🎬', blurin: '🌫️', blurout: '😶‍🌫️' };
 const frc = x => x - Math.floor(x);
 function rnd(v) { const r = Math.sin(v * 12.9898) * 43758.5453; return r - Math.floor(r); }
 function edEffects(t) {
   const wrap = $e('edFxWrap'), P = ED.plan; if (!wrap || !P) return;
   const st = $e('edStage'), sw = st.clientWidth, sh = st.clientHeight, W = P.size[0];
-  let add = 0, gray = false, inv = false, blur = 0, rgb = 0, sep = false, sat = 1, dx = 0, dy = 0, sc = 1;
+  let add = 0, gray = false, inv = false, blur = 0, rgb = 0, sep = false, sat = 1, dx = 0, dy = 0, sc = 1, rot = 0, hueDeg = 0, hueSat = 1, con = 1, bars = 0, scan = false, spot = 0, leak = 0, noise = 0;
   (S.config.effects || []).forEach(e => { if (!(t >= e.start && t < e.end) || !FX_EFF[e.type]) return;
     const k = e.amount == null ? 1 : +e.amount, T = t - e.start, len = e.end - e.start;
     switch (e.type) {
@@ -1048,10 +1109,32 @@ function edEffects(t) {
       case 'vhs': rgb += Math.max(1, Math.round(5 * k * W / 1080)); sat *= 1.3; sc *= 1.01; dy += 0.004 * k * Math.sin(2 * Math.PI * 13 * T); break;
       case 'shake': { const A = 0.012 * k; sc *= 1 + 2.4 * A; dx += A * Math.sin(2 * Math.PI * 9.3 * T); dy += 0.6 * A * Math.sin(2 * Math.PI * 7.1 * T + 1); break; }
       case 'zoom': sc *= 1 + 0.08 * k * Math.pow(1 - frc(2 * T), 3); break;
+      case 'fadeinblack': add -= k * (1 - T / Math.max(.01, len)); break;
+      case 'fadeoutblack': add -= k * T / Math.max(.01, len); break;
+      case 'fadeinwhite': add += k * (1 - T / Math.max(.01, len)); break;
+      case 'fadeoutwhite': add += k * T / Math.max(.01, len); break;
+      case 'flicker': add += 0.15 * k * Math.sin(2 * Math.PI * 9 * T) * Math.sin(2 * Math.PI * 4.7 * T + 1); break;
+      case 'rainbow': hueDeg += 120 * T; break;
+      case 'bwfade': hueSat *= Math.max(0, 1 - k * T / Math.max(.01, len)); break;
+      case 'contrast': con *= 1 + 0.35 * k; break;
+      case 'noise': noise += 35 * k; break;
+      case 'retrodv': rgb += Math.max(1, Math.round(3 * k * W / 1080)); noise += 20 * k; scan = true; break;
+      case 'letterbox': bars = Math.max(bars, 0.12 * k); break;
+      case 'spotlight': spot = Math.max(spot, Math.min(1, 0.95 * k)); break;
+      case 'lightleak': leak = Math.max(leak, Math.min(1, 0.85 * k)); break;
+      case 'blurin': case 'blurout': { const j = Math.min(7, Math.floor(T / Math.max(.01, len) * 8)), f = e.type === 'blurin' ? 1 - (j + .5) / 8 : (j + .5) / 8; blur += 14 * k * f * W / 1080; break; }
+      case 'rgbshake': if (frc(T * 6) < .5) rgb += Math.max(1, Math.round(14 * k * W / 1080)); break;
+      case 'earthquake': { const A = 0.03 * k; sc *= 1 + 2.4 * A; dx += A * Math.sin(2 * Math.PI * 13 * T); dy += 0.6 * A * Math.sin(2 * Math.PI * 11 * T + 1); break; }
+      case 'heartbeat': { const ph = T - 0.8 * Math.floor(T / 0.8), b = x => Math.exp(-(x / .06) * (x / .06)); sc *= 1 + 0.07 * k * (b(ph) + 0.7 * b(ph - .22)); break; }
+      case 'zoompunch': sc *= 1 + 0.2 * k * (1 - Math.pow(1 - Math.min(T / .35, 1), 3)); break;
+      case 'dizzy': sc *= 1.18; rot += 0.06 * k * Math.sin(2 * Math.PI * 1.2 * T); dx += 0.02 * k * Math.sin(2 * Math.PI * 0.8 * T); break;
+      case 'swing': sc *= 1.2; rot += 0.09 * k * Math.sin(2 * Math.PI * 0.9 * T); break;
       case 'glitch': { sc *= 1.04; const seed = Math.round(e.start * 10), j = Math.floor(T * 10);
         if (rnd(j * 7.13 + seed) > 0.6) { rgb += Math.max(1, Math.round(16 * k * W / 1080)); dx += (rnd(j * 3.7 + seed + 1) - 0.5) * 0.06 * k; } break; }
     } });
   const f = [];
+  if (hueDeg || hueSat !== 1) { $e('edHueM').setAttribute('values', hueMatrix(hueDeg, hueSat)); f.push('url(#edHue)'); }
+  if (con !== 1) f.push(`contrast(${con})`);
   if (sep) f.push('sepia(1)');
   if (sat !== 1) f.push(`saturate(${sat})`);
   if (add) { ['R', 'G', 'B'].forEach(c => $e('edAdd' + c).setAttribute('intercept', add)); f.push('url(#edAdd)'); }
@@ -1060,7 +1143,19 @@ function edEffects(t) {
   if (rgb) { const d = rgb * sw / W; $e('edRGBr').setAttribute('dx', -d); $e('edRGBb').setAttribute('dx', d); f.push('url(#edRGB)'); }
   if (blur) f.push(`blur(${blur * sw / W}px)`);
   wrap.style.filter = f.join(' ') || 'none';
-  wrap.style.transform = dx || dy || sc !== 1 ? `translate(${-dx * sw}px, ${-dy * sh}px) scale(${sc})` : 'none';
+  wrap.style.transform = dx || dy || sc !== 1 || rot ? `translate(${-dx * sw}px, ${-dy * sh}px) rotate(${rot}rad) scale(${sc})` : 'none';
+  // pictures laid over the frame (as the builder's overlays): cinema bars, scanlines, spotlight, warm light, grain
+  const ov = $e('edFxOver');
+  if (ov) {
+    const L = [];
+    if (bars) L.push(`linear-gradient(#000 0 ${bars * 50}%, transparent ${bars * 50}% ${100 - bars * 50}%, #000 ${100 - bars * 50}%)`);
+    if (scan) { const st = Math.max(2, Math.round(4 * W / 1080)) * sh / P.size[1]; L.push(`repeating-linear-gradient(rgba(0,0,0,.28) 0 ${st / 4}px, rgba(0,0,0,.14) ${st / 4}px ${st / 2}px, transparent ${st / 2}px ${st}px)`); }
+    if (spot) { const stops = []; for (let i = 0; i <= 10; i++) { const d = .3 + .7 * i / 10, q = (d - .3) / .7; stops.push(`rgba(0,0,0,${(spot * q * q).toFixed(3)}) ${(d * 100).toFixed(1)}%`); }   // 100% = the corners, as the builder's vignette
+      L.push(`radial-gradient(ellipse farthest-corner at 50% 50%, transparent 30%, ${stops.join(',')})`); }
+    ov.style.background = L.join(',') || 'none';
+    const lk = $e('edFxLeak'); lk.style.opacity = leak;
+    const nz = $e('edFxNoise'); nz.style.opacity = Math.min(1, noise / 90); if (noise) nz.style.backgroundPosition = `${Math.floor(Math.random() * 200)}px ${Math.floor(Math.random() * 200)}px`;
+  }
 }
 function edSetEffect(type) {
   const E = S.config.effects = S.config.effects || [], t = ED.vid.currentTime;
@@ -1137,12 +1232,12 @@ function edStyleTools(id, wide) {
   return `<div class="edstyle${wide ? ' wide' : ''}">
     ${id != null && !isText(id) ? `<div class="row" style="margin:8px 0"><b>Text style for</b><button class="small ${all ? 'primary' : ''}" onclick="ED.styleAll=true;edPanel();if(ED.pop==='text')edPopRender()">All lyrics</button><button class="small ${all ? '' : 'primary'}" onclick="ED.styleAll=false;edPanel();if(ED.pop==='text')edPopRender()">Only this screen</button>
       ${own ? `<button class="small" onclick="clearStyle(${jid})">Undo this screen's own style</button>` : ''}</div>` : ''}
+    <div class="popgrp" id="edIdeasHead">✨ Colour ideas for this background <button class="small" onclick="edIdeas(${jid})">${ED.ideas && ED.ideas.id === id ? 'Look again' : 'Find ideas'}</button></div><div class="pals" id="edIdeas">${ED.ideas && ED.ideas.id === id ? ED.ideas.html : ''}</div>
     <div class="popgrp">Font</div><div class="fonttiles">${fonts.map(f => `<div class="ftile ${f === L.lyrics_font ? 'on' : ''}" onclick="setStyle(${jid},{lyrics_font:'${f.replace(/'/g, "\\'")}'})"><b style="font-family:${fontCss(f)};font-weight:${L.lyrics_weight}">${esc(sample)}</b><small>${esc(f)}</small></div>`).join('')}</div>
     <div class="row" style="margin-top:8px"><b>Size</b><button class="small" onclick="setStyle(${jid},{lyrics_size:Math.max(30,${L.lyrics_size}-4)})">−</button><b>${L.lyrics_size}</b><button class="small" onclick="setStyle(${jid},{lyrics_size:Math.min(140,${L.lyrics_size}+4)})">+</button>
       <b style="margin-left:10px">Weight</b><select onchange="setStyle(${jid},{lyrics_weight:+this.value})">${[[400, 'Regular'], [500, 'Medium'], [600, 'Semi-bold'], [700, 'Bold']].map(([v, n]) => `<option value="${v}" ${+L.lyrics_weight === v ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
     <div class="slider" style="margin-top:6px"><span style="min-width:110px">Outline</span><input type="range" min="0" max="0.2" step="0.005" value="${L.lyrics_outline_w}" onchange="setStyle(${jid},{lyrics_outline_w:+this.value})"><output>${Math.round(L.lyrics_outline_w * 100)} %</output></div>
     <div class="popgrp">Colours</div><div class="pals">${PAL.lyrics.map(([n, v]) => palTile(jid, n, v, L)).join('')}</div>
-    <div class="popgrp">✨ Colour ideas for this background <button class="small" onclick="edIdeas(${jid})">${ED.ideas && ED.ideas.id === id ? 'Look again' : 'Find ideas'}</button></div><div class="pals" id="edIdeas">${ED.ideas && ED.ideas.id === id ? ED.ideas.html : ''}</div>
     <div class="popgrp">★ Your saved colours</div><div class="pals" id="edFavs">${(ED.favs || []).map(f => palTile(jid, f.name, f.c, L, true)).join('') || '<span class="hint" style="margin:0">None yet: press ♥ on a colour idea you like.</span>'}</div>
     <div class="row" style="margin-top:8px">${['lyrics_fill_left', 'lyrics_fill_mid', 'lyrics_fill_right', 'lyrics_outline', 'lyrics_glow'].map((k, i) => `<label class="cpick" title="${['Left', 'Middle', 'Right', 'Outline', 'Glow'][i]}"><input type="color" value="${L[k]}" onchange="setStyle(${jid},{${k}:this.value})"><small>${['Left', 'Middle', 'Right', 'Outline', 'Glow'][i]}</small></label>`).join('')}</div>
   </div>`;
@@ -1165,7 +1260,8 @@ function hsl(h, s, l) { h = ((h % 360) + 360) % 360; s /= 100; l /= 100; const k
 function lum(hx) { const c = [1, 3, 5].map(i => parseInt(hx.slice(i, i + 2), 16) / 255).map(v => v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4)); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; }
 function contrast(a, b) { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); }
 function edBgSample(id) {
-  const base = $e('edBase'), blk = $e('edLyr').firstElementChild, st = $e('edStage').getBoundingClientRect();
+  const tid = typeof id === 'string' ? id.replace(/'/g, '') : null, tel = tid && isText(tid) && $e('edTxt').querySelector(`[data-t="${tid}"]`);
+  const base = $e('edBase'), blk = tel ? tel.firstElementChild : $e('edLyr').firstElementChild, st = $e('edStage').getBoundingClientRect();   // behind these words
   let x = 0, y = base.height * 0.1, w = base.width, h = base.height * 0.2;
   if (blk) { const r = blk.getBoundingClientRect(), k = base.width / st.width; x = Math.max(0, (r.left - st.left) * k); y = Math.max(0, (r.top - st.top) * k); w = Math.min(base.width - x, r.width * k); h = Math.min(base.height - y, Math.max(20, r.height * k)); }
   const d = base.getContext('2d').getImageData(x, y, Math.max(1, w), Math.max(1, h)).data;
@@ -1196,13 +1292,14 @@ function suggestPalettes(bg) {
     .filter(p => p.score >= 2.2 || p.fav).sort((a, b) => (b.fav - a.fav) || (b.score - a.score)).slice(0, 10);
 }
 function edIdeas(jid) {
+  const id0 = typeof jid === 'string' ? jid.replace(/'/g, '') : jid; jid = typeof id0 === 'string' ? `'${id0}'` : id0;   // "t0" or 3, quoted for the buttons
   const bg = edBgSample(jid), box = $e('edIdeas'); if (!box) return;
-  const L = Object.assign({}, S.config.look, ED.styleAll ? {} : styleOf(jid) || {}), words = $e('edLyr').innerText.split('\n')[0] || 'Soujanya';
+  const L = Object.assign({}, S.config.look, ED.styleAll && !isText(id0) ? {} : styleOf(id0) || {}), words = (isText(id0) ? (S.config.texts[+id0.slice(1)].lines || [''])[0] : $e('edLyr').innerText.split('\n')[0]) || 'Soujanya';
   const html = suggestPalettes(bg).map(p => `<div class="idea" title="Contrast ${p.score.toFixed(1)}">
     <div class="ideabg" style="background-image:url(${bg.crop})" onclick='setStyle(${jid},${JSON.stringify(palVals(p.c))})'>${gtext([words.slice(0, 16)], { font: fontCss(L.lyrics_font), weight: L.lyrics_weight, size: 22, left: p.c[0], mid: p.c[1], right: p.c[2], outline: p.c[3], ow: L.lyrics_outline_w, glow: p.c[4] })}</div>
     <div class="row" style="gap:4px;justify-content:space-between"><small>${esc(p.name)}</small>${p.fav ? '' : `<button class="small" title="Save: offered again in every song" onclick='edFav(${JSON.stringify({ name: p.name, c: p.c })})'>♥</button>`}</div></div>`).join('')
     || '<span class="hint">No idea stands out enough here: try the colour pickers.</span>';
-  ED.ideas = { id: typeof jid === 'string' ? jid.replace(/'/g, '') : jid, html }; box.innerHTML = html;
+  ED.ideas = { id: id0, html }; box.innerHTML = html;
 }
 
 function clock(t) { t = Math.max(0, t || 0); const m = Math.floor(t / 60), s = t - m * 60; return m + ':' + (s < 10 ? '0' : '') + s.toFixed(1); }
@@ -1267,3 +1364,150 @@ function edInlineText(tid) {
   ta.onkeydown = e => { e.stopPropagation(); if (e.key === 'Escape' || (e.key === 'Enter' && (e.metaKey || e.ctrlKey))) ta.blur(); };
   ta.onblur = () => { ta.remove(); edPanel(); edRefreshSoon(); };
 }
+
+// ---------- undo / redo: snapshots of the song's settings (config, credits, lyrics) once a change settles ----------
+// A drag or a burst of typing is one step (the snapshot waits until nothing changed for 0.45 s). Up to 150 steps per song.
+const HIST = { stack: [], pos: -1, t: null };
+function histSnap() { return JSON.stringify({ config: S.config, credits: S.credits, lyrics: S.lyrics }); }
+function histInit() { clearTimeout(HIST.t); HIST.t = null; HIST.stack = [histSnap()]; HIST.pos = 0; histUI(); }
+function histPush() {
+  clearTimeout(HIST.t);
+  HIST.t = setTimeout(histNow, 450);
+}
+function histNow() {
+  HIST.t = null; if (!S || HIST.pos < 0) return;
+  const s = histSnap(); if (s === HIST.stack[HIST.pos]) return;
+  HIST.stack = HIST.stack.slice(0, HIST.pos + 1); HIST.stack.push(s);
+  if (HIST.stack.length > 150) HIST.stack.shift();
+  HIST.pos = HIST.stack.length - 1; histUI();
+}
+function histApply(i, what) {
+  if (HIST.t) histNow();                         // a change still waiting becomes its own step first
+  if (i < 0 || i >= HIST.stack.length) return toastEd(what === 'undo' ? 'Nothing more to undo.' : 'Nothing more to redo.');
+  HIST.pos = i;
+  const d = JSON.parse(HIST.stack[i]); S.config = d.config; S.credits = d.credits; S.lyrics = d.lyrics;
+  dirty = true; $('#saveState').textContent = 'Not saved'; $('#saveState').className = 'dirty';
+  ED.lastScreen = null; ED.txtKey = {}; ED.planKey = '';
+  const sel = ED.sel; renderAll(); ED.sel = sel; if (ED.open) { edRefreshSoon(0); edPanel(); edDrawTL(); if (ED.pop) edPopRender(); }
+  histUI(); toastEd(what === 'undo' ? '↶ Undone' : '↷ Redone');
+}
+function edUndo() { if (HIST.t) histNow(); histApply(HIST.pos - 1, 'undo'); }
+function edRedo() { histApply(HIST.pos + 1, 'redo'); }
+function histUI() { const u = $e('edUndoBtn'), r = $e('edRedoBtn'); if (u) u.disabled = HIST.pos <= 0 && !HIST.t; if (r) r.disabled = HIST.pos >= HIST.stack.length - 1; }
+// ⌘Z / ⇧⌘Z (Ctrl on other computers): inside a text box the box's own undo, elsewhere the editor's
+function edUndoKey(redo) {
+  const a = document.activeElement;
+  if (a && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && /text|number|search/.test(a.type)))) { document.execCommand(redo ? 'redo' : 'undo'); return; }
+  redo ? edRedo() : edUndo();
+}
+document.addEventListener('keydown', ev => {
+  if (!(ev.metaKey || ev.ctrlKey) || ev.key.toLowerCase() !== 'z' && ev.key.toLowerCase() !== 'y') return;
+  const a = document.activeElement; if (a && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && /text|number|search/.test(a.type)))) return;   // the box's own undo
+  ev.preventDefault(); (ev.key.toLowerCase() === 'y' || ev.shiftKey) ? edRedo() : edUndo();
+});
+
+// 💡 in the tool row: colour ideas for the words on the picture right now (a selected text or lyric screen, else the one playing)
+function edIdeasHere() {
+  const t = ED.vid.currentTime; let id = null;
+  if (ED.sel && (ED.sel.kind === 'text' || ED.sel.kind === 'screen')) id = ED.sel.kind === 'text' ? 't' + ED.sel.k : ED.sel.i;
+  else { const k = (S.config.texts || []).findIndex(x => t >= x.start && t < x.end), sc = edScreenAt(t);
+    if (k >= 0) id = 't' + k; else if (sc) id = sc.i; else { const n = edScreenNear(t); if (n) { id = n.i; edSeek(n.start + 0.3); } } }
+  if (id == null) return toastEd('No lyrics or text yet.');
+  ED.vid.pause(); edSelect(isText(id) ? { kind: 'text', k: +id.slice(1) } : { kind: 'screen', i: id });
+  setTimeout(() => { edIdeas(typeof id === 'string' ? `'${id}'` : id); const h = $e('edIdeasHead'); if (h) h.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 350);   // after the picture shows those words
+}
+
+// ffmpeg's hue filter as an RGB matrix (turn the colour by deg in YUV, scale it by sat): the same maths as fx.hue_matrix
+function hueMatrix(deg, sat) {
+  const Y = [.299, .587, .114, -.168736, -.331264, .5, .5, -.418688, -.081312], c = Math.cos(deg * Math.PI / 180), s = Math.sin(deg * Math.PI / 180);
+  const R = [1, 0, 0, 0, c * sat, -s * sat, 0, s * sat, c * sat];
+  const inv = m => { const [a, b, c2, d, e, f, g, h, i] = m, A = e * i - f * h, B = -(d * i - f * g), C = d * h - e * g, det = a * A + b * B + c2 * C;
+    return [A, -(b * i - c2 * h), b * f - c2 * e, B, a * i - c2 * g, -(a * f - c2 * d), C, -(a * h - b * g), a * e - b * d].map(v => v / det); };
+  const mul = (A, B) => { const r = []; for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) { let t = 0; for (let k = 0; k < 3; k++) t += A[i * 3 + k] * B[k * 3 + j]; r.push(t); } return r; };
+  const M = mul(inv(Y), mul(R, Y));
+  return [M[0], M[1], M[2], 0, 0, M[3], M[4], M[5], 0, 0, M[6], M[7], M[8], 0, 0, 0, 0, 0, 1, 0].map(v => +v.toFixed(5)).join(' ');
+}
+
+// ---------- the cards' text pieces (title, her name, credits ..): each drawn by the builder (stills.render_card), placed and styled here ----------
+const CARD_PIECE_LABEL = { title: 'Title', cover: 'Her name (cover by)', credits: 'Song credits', name: 'Her name', lines: 'Lines under the name' };
+async function edLoadCard(url) {
+  ED.cards = ED.cards || {};
+  if (ED.cards[url]) return;
+  ED.cards[url] = { loading: true };
+  try {
+    const m = await api(url);
+    await Promise.all([m.bg, ...m.els.map(e => e.url)].map(u => ED.imgs[u] && ED.imgs[u].ok ? 0 : loadPicture(u).then(im => { ED.imgs[u] = { im, ok: true }; })));
+    ED.cards[url] = m; ED.cardKey = null;
+  } catch (e) { delete ED.cards[url]; }
+}
+function edCardReady(p) { const c = ED.cards && ED.cards[p.card]; return !!(c && c.els && ED.imgs[c.bg] && ED.imgs[c.bg].ok); }
+function cardEl(kind, id) { const c = S.config[kind]; c.els = c.els || {}; c.els[id] = c.els[id] || {}; return c.els[id]; }
+function edCardEls() {
+  const box = $e('edCard'); if (!box) return;
+  const on = ED.cardOn;
+  if (!on) { if (box.firstChild) { box.innerHTML = ''; ED.cardKey = null; } return; }
+  const p = on.p, cd = ED.cards[p.card], els = (S.config[p.kind] || {}).els || {};
+  const key = p.card + JSON.stringify(els) + (ED.sel && ED.sel.kind === 'cardel' ? ED.sel.id : '');
+  if (ED.cardKey !== key) {
+    ED.cardKey = key;
+    box.innerHTML = cd.els.map(e => { const ps = els[e.id] || {}, x = ps.x != null ? ps.x : e.cx, y = ps.y != null ? ps.y : e.cy, w = e.w / cd.size[0] * 100, h = e.h / cd.size[1] * 100;
+      const sel = ED.sel && ED.sel.kind === 'cardel' && ED.sel.id === e.id;
+      return `<img src="${ED.imgs[e.url].im ? e.url : ''}" data-el="${e.id}" class="cardpiece${sel ? ' on' : ''}" title="${CARD_PIECE_LABEL[e.id] || e.id}: drag to move, click for its font and colours" draggable="false"
+        style="left:${(x * 100 - w / 2).toFixed(3)}%;top:${(y * 100 - h / 2).toFixed(3)}%;width:${w.toFixed(3)}%;height:${h.toFixed(3)}%">`; }).join('');
+  }
+  box.style.transform = `scale(${on.z})`;                    // the card's slow zoom, as the builder's zoompan
+}
+function edCardDown(ev) {
+  const img = ev.target.closest && ev.target.closest('.cardpiece'); if (!img || !ED.cardOn) return;
+  ev.preventDefault(); ev.stopPropagation(); ED.vid.pause();
+  const kind = ED.cardOn.p.kind, id = img.dataset.el, cd = ED.cards[ED.cardOn.p.card], e = cd.els.find(x => x.id === id);
+  const box = $e('edCard').getBoundingClientRect(), ps = (S.config[kind].els || {})[id] || {};
+  const x0 = ps.x != null ? ps.x : e.cx, y0 = ps.y != null ? ps.y : e.cy, X = ev.clientX, Y = ev.clientY; let moved = false;
+  const mv = m => { const dx = (m.clientX - X) / box.width, dy = (m.clientY - Y) / box.height; if (Math.abs(m.clientX - X) + Math.abs(m.clientY - Y) > 4) moved = true; if (!moved) return;
+    const el = cardEl(kind, id); el.x = +Math.max(0, Math.min(1, x0 + dx)).toFixed(4); el.y = +Math.max(0, Math.min(1, y0 + dy)).toFixed(4);
+    img.style.left = (el.x * 100 - e.w / cd.size[0] * 50) + '%'; img.style.top = (el.y * 100 - e.h / cd.size[1] * 50) + '%'; mark(); };
+  const up = () => { document.removeEventListener('pointermove', mv); document.removeEventListener('pointerup', up);
+    edSelect({ kind: 'cardel', card: kind, id }); if (moved) { ED.cardKey = null; edRefreshSoon(); } };
+  document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up);
+}
+// a card piece's own font, size and colours (S.config.opening.els / ending.els); the builder redraws it (a second or two)
+const PIECE_DEFAULTS = {
+  title: L => ({ font: L.credits_font, size: L.title_size, fill_left: L.title_fill_left, fill_right: L.title_fill_right, outline: L.title_outline, glow: L.title_glow, role: 'lang' }),
+  cover: L => ({ font: L.logo_font, size: 96, fill_left: L.logo_fill_left, fill_right: L.logo_fill_right, outline: L.logo_outline, glow: L.logo_glow, role: 'script' }),
+  credits: L => ({ font: L.credits_font, size: L.credits_size, fill_left: L.title_fill_left, fill_right: L.title_fill_right, outline: L.title_outline, glow: L.title_glow, role: 'lang' }),
+  name: L => ({ font: L.end_font, size: L.end_size, fill_left: L.end_fill, fill_right: L.end_fill, outline: L.end_outline, glow: L.end_glow, role: 'script' }),
+  lines: L => ({ font: L.credits_font, size: L.credits_size, fill_left: L.title_fill_left, fill_right: L.title_fill_right, outline: L.title_outline, glow: L.title_glow, role: 'lang' }),
+};
+function pieceStyle(kind, id) { const d = PIECE_DEFAULTS[id](edLook()), o = ((S.config[kind] || {}).els || {})[id] || {}; const r = Object.assign({}, d); ['font', 'size', 'fill_left', 'fill_right', 'outline', 'glow'].forEach(k => { if (o[k] != null && o[k] !== '') r[k] = o[k]; }); return r; }
+function setPiece(kind, id, vals) { Object.assign(cardEl(kind, id), vals); mark(); edRefreshSoon(150); edPanel(); }
+function resetPiece(kind, id, what) {
+  const el = cardEl(kind, id);
+  (what === 'place' ? ['x', 'y'] : ['font', 'size', 'fill_left', 'fill_right', 'outline', 'glow']).forEach(k => delete el[k]);
+  mark(); ED.cardKey = null; edRefreshSoon(0); edPanel();
+}
+function edPiecePanel(sel) {
+  const { card: kind, id } = sel, st = pieceStyle(kind, id), own = ((S.config[kind] || {}).els || {})[id] || {}, J = `'${kind}','${id}'`;
+  const words = id === 'title' ? (S.credits.opening.title_line || S.config.title || 'Title') : id === 'cover' ? (S.credits.opening.cover_by || 'Soujanya') : id === 'name' ? (S.credits.ending.name || 'Soujanya') : (S.config.language === 'hindi' ? 'फ़िल्म' : 'సినిమా');
+  const pals = (id === 'cover' || id === 'name' ? PAL.name : PAL.opening).map(([n, v]) => `<div class="pal" style="min-width:76px;padding:5px" onclick='setPiece(${JSON.stringify(kind)},${JSON.stringify(id)},${JSON.stringify({ fill_left: v[0], fill_right: v[2] || v[0], outline: v[3] || v[1], glow: v[4] || v[2] })})'><i style="height:22px;background:linear-gradient(90deg,${v[0]},${v[2] || v[0]})"></i><small>${n}</small></div>`).join('');
+  return `<h3 style="margin-top:0">🪧 ${esc(CARD_PIECE_LABEL[id] || id)} <small class="hint">on the ${kind === 'opening' ? 'opening' : 'end'} card</small></h3>
+    <div class="hint" style="margin:0 0 6px">Drag it on the picture to place it anywhere. Its words are in the card's settings.</div>
+    <div class="row"><button class="small" onclick="edSelect({kind:'${kind}'})">✏️ The card's words</button>${own.x != null ? `<button class="small" onclick="resetPiece(${J},'place')">Back to its usual place</button>` : ''}
+      ${['font', 'size', 'fill_left', 'outline'].some(k => own[k] != null) ? `<button class="small" onclick="resetPiece(${J},'style')">Back to the card's style</button>` : ''}<button class="small" onclick="edSelect(null)">Done</button></div>
+    <div class="popgrp">Font</div><div class="fonttiles">${fontList(PIECE_DEFAULTS[id](edLook()).role).map(f => `<div class="ftile ${f === st.font ? 'on' : ''}" onclick="setPiece(${J},{font:'${f.replace(/'/g, "\\'")}'})"><b style="font-family:${fontCss(f)}">${esc(words.slice(0, 12))}</b><small>${esc(f)}</small></div>`).join('')}</div>
+    <div class="row" style="margin-top:8px"><b>Size</b><button class="small" onclick="setPiece(${J},{size:Math.max(20,${+st.size}-6)})">−</button><b>${Math.round(st.size)}</b><button class="small" onclick="setPiece(${J},{size:Math.min(260,${+st.size}+6)})">+</button></div>
+    <div class="popgrp">Colours</div><div class="pals">${pals}</div>
+    <div class="row" style="margin-top:8px">${[['fill_left', 'Left'], ['fill_right', 'Right'], ['outline', 'Outline'], ['glow', 'Glow']].map(([k, n]) => `<label class="cpick"><input type="color" value="${st[k]}" onchange="setPiece(${J},{${k}:this.value})"><small>${n}</small></label>`).join('')}</div>
+    <div class="hint" style="margin-top:6px">The card is redrawn by the video maker's own code a second or two after a change.</div>`;
+}
+
+// her name on the picture: a dashed outline and a move cursor when pointed at (it can be dragged anywhere; click for its settings)
+function edHoverName(ev) {
+  const lh = $e('edLogoHit'), r = lh && lh.firstElementChild && lh.firstElementChild.getBoundingClientRect(), box = $e('edHover');
+  const on = r && r.width && ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom && !ED.cardOn;
+  if (!on) { box.style.display = 'none'; $e('edStage').style.cursor = ''; return; }
+  const st = $e('edStage').getBoundingClientRect();
+  Object.assign(box.style, { display: 'block', left: (r.left - st.left - 4) + 'px', top: (r.top - st.top - 4) + 'px', width: (r.width + 8) + 'px', height: (r.height + 8) + 'px' });
+  $e('edStage').style.cursor = 'move';
+}
+
+function edNameHome() { const o = edOutCfg(), w = (o.look && 'logo_x' in o.look) ? o.look : S.config.look; w.logo_x = w === S.config.look ? 0.15 : 0.04; w.logo_y = w === S.config.look ? 0.04 : 0.80; mark(); edLogo(true); edRefreshSoon(0); }
