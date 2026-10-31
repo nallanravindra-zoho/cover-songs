@@ -30,6 +30,9 @@ their animation, her name, the opening and end cards, and the interlude pictures
 between Instagram, YouTube and the reel. Every change anywhere on the page shows at once. The picture, the tools and the timeline fit
 in the window; **⛶ Full screen** gives the editor the whole window.
 
+The picture is in the middle: the settings of what you selected on its left, the choices of the tool you picked on its right, and
+the "i" next to the title explains it all.
+
 **Tools** (one row under the picture, InShot-style; each changes what is under the playhead or what is selected):
 - ✂️ **Split** cuts her video at the playhead, so each part can have its own filter and motion.
 - 🎨 **Filter**: 27 looks with strength and fine adjustments, shown on the current frame, for her video's part or an interlude picture.
@@ -42,7 +45,10 @@ in the window; **⛶ Full screen** gives the editor the whole window.
   ✨ **Colour ideas** are worked out from the picture behind the words (opposite colours, triads, gold, neon ..., only ones that stand
   out from it); press ♥ to keep a set: saved sets (content/palettes.json) are offered first in every song.
 - ✏️ **Lyrics** / ➕ **Add lyric**: change the words, remove a screen, add one at the playhead.
-- 🖼️ **Pictures**: the pictures of the nearest interlude. 🗑️ **Delete** (or the Delete key): the selected block, whatever it is.
+- ✚ **Add text**: any text (a title, a thank-you, credits) at the playhead, on its own blue "text" row: drag it in time and stretch it
+  for as long as it should show; on the picture drag it anywhere and double-click to type; its own font, colours and animation.
+- 🖼️ **Pictures**: the pictures of the nearest interlude. Drag the white line between two pictures on the timeline (or type a length)
+  to show one longer than the other. 🗑️ **Delete** (or the Delete key): the selected block, whatever it is.
 
 **On the picture**: click the words to select that screen (its text style opens on the right); double-click to type the words right on
 the picture; drag them anywhere (only that screen while it is selected, otherwise all lyrics); drag her name anywhere.

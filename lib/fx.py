@@ -158,22 +158,25 @@ def zoompan_exprs(name, frames):
 
 
 def interlude_parts(it, total, default_motion, between):
-    """Times of the pictures inside one interlude (seconds from the interlude's start). Each picture gets an equal share;
-    the transition into a picture is centred on the boundary. Returns [{..picture, "s", "e", "tin", "din"}]."""
+    """Times of the pictures inside one interlude (seconds from the interlude's start). Each picture's share is its "weight"
+    (its length in seconds when it was last set; equal when none is set), scaled to the interlude's length; the transition into a
+    picture is centred on the boundary. Same rule as partTimes() in ui/editor.js. Returns [{..picture, "s", "e", "tin", "din"}]."""
     pics = it["pictures"]
     n = len(pics)
-    share = total / n
+    ws = [max(0.05, float(pc.get("weight") or 0) or 1.0) for pc in pics] if any(pc.get("weight") for pc in pics) else [1.0] * n
+    W = sum(ws)
+    b = [total * sum(ws[:j]) / W for j in range(n + 1)]            # boundaries
     out = []
     for j, pc in enumerate(pics):
         d = 0.0
         if j:
             d = float(pc.get("trans_seconds") or between["seconds"])
-            d = max(0.2, min(d, share * 0.5))
+            d = max(0.2, min(d, (b[j] - b[j - 1]) * 0.5, (b[j + 1] - b[j]) * 0.5))
         tin = (pc.get("trans") or between["name"]) if j else None
         out.append(dict(pc, motion=pc.get("motion") or default_motion, tin=tin, din=0.1 if tin == "cut" else round(d, 3)))
     for j, o in enumerate(out):
-        o["s"] = 0.0 if j == 0 else round(j * share - o["din"] / 2, 3)
-        o["e"] = round(total, 3) if j == n - 1 else round((j + 1) * share + out[j + 1]["din"] / 2, 3)
+        o["s"] = 0.0 if j == 0 else round(b[j] - o["din"] / 2, 3)
+        o["e"] = round(total, 3) if j == n - 1 else round(b[j + 1] + out[j + 1]["din"] / 2, 3)
     return out
 
 

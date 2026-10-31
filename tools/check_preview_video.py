@@ -33,12 +33,14 @@ def blocks(a, b, n=8):
 
 def overrides(c, il_start):
     """The test changes: two pictures in the second interlude; her video cut 8 s before it, the part after the cut warm and slowly
-    zooming in (with dark corners); the words of the first screen changed and the second screen taken out; effects: an RGB split
+    zooming in (with dark corners); a free text low on the picture; the second picture shown 2.5 times as long as the first; the words of the first screen changed and the second screen taken out; effects: an RGB split
     before the cut, a flash on her zooming part, a shake over the way into the interlude; every lyric screen its own colours and size."""
     ph = c["photos"]
-    il = {"on": True, "pictures": [{"photo": ph[0] if ph else "", "filter": "vintage"}, {"photo": ph[1] if len(ph) > 1 else "", "filter": "bw", "motion": "drift_left", "trans": "glitchrows"}]}
+    il = {"on": True, "pictures": [{"photo": ph[0] if ph else "", "filter": "vintage", "weight": 2}, {"photo": ph[1] if len(ph) > 1 else "", "filter": "bw", "motion": "drift_left", "trans": "glitchrows", "weight": 5}]}
     conf = {"video_clips": {"cuts": [round(il_start - 8, 2)], "fx": [{}, {"filter": "warm", "motion": "zoom_in", "adjust": {"v": 0.4}}]},
             "screen_text": {"0": ["checking new words", "on two lines"]}, "screen_off": {"1": True},
+            "texts": [{"lines": ["A free text", "placed low"], "start": round(il_start - 10, 2), "end": round(il_start - 2, 2), "pos": {"x": 0.05, "y": 0.8},
+                       "style": {"lyrics_size": 54, "lyrics_fill_left": "#ffffff", "lyrics_fill_mid": "#ffe45e", "lyrics_fill_right": "#ffffff"}, "anim": "fade_up"}],
             "screen_style": {str(i): {"lyrics_size": 66, "lyrics_fill_left": "#ffe45e", "lyrics_fill_mid": "#ffffff", "lyrics_fill_right": "#7fe6e0", "lyrics_glow": "#ff3d9a"} for i in range(80)},
             "effects": [{"type": "rgb", "start": round(il_start - 10, 2), "end": round(il_start - 8.5, 2)},
                         {"type": "flash", "start": round(il_start - 4.25, 2), "end": round(il_start - 3.6, 2)},
@@ -125,6 +127,11 @@ def main():
             pg.wait_for_function("!ED.vid.seeking")
             pg.wait_for_timeout(700)
             shot = Image.open(io.BytesIO(pg.locator("#edStage").screenshot())).convert("RGB")
+            # both can be wrong the same way (once the text size was 0 in both): the free text must really be on the picture
+            if pg.evaluate("t => (S.config.texts || []).some(x => t >= x.start && t < x.end)", t):
+                hgt = pg.evaluate("(() => { const b = $e('edTxt').querySelector('.ln'); return b ? b.getBoundingClientRect().height : 0; })()")
+                if hgt < 8:
+                    errs.append(f"{P.mmss(t)}: the free text is not visible in the preview")
             # the preview copy and the built video are both re-timed to 30 frames a second, so the same moment can be one frame
             # apart in the two: compare with the closest of the frames around it
             raw = subprocess.run(["ffmpeg", "-loglevel", "error", "-ss", f"{max(0, t - off - 2 / 30):.3f}", "-i", str(video), "-frames:v", "5", "-vf", f"scale={shot.width}:{shot.height}",

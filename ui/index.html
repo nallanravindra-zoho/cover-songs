@@ -171,11 +171,12 @@ details.outcard .obody{padding:14px 16px}
 .cres{display:flex;flex-direction:column;gap:8px}
 .cres .chip{border-radius:12px;font-weight:600;padding:8px 12px}
 /* live preview and timeline */
-.ed{display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:start;margin-top:6px}
-@media(max-width:800px){.ed{grid-template-columns:1fr}}
+.ed{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:16px;align-items:start;margin-top:6px}
+@media(max-width:1000px){.ed{grid-template-columns:auto minmax(0,1fr)}#edPanel{grid-column:1/-1;order:3}}
+#edDock{min-width:0;position:sticky;top:10px}
 #edPanel{overflow:auto;padding-right:4px}
 .edtop{display:flex;gap:8px;align-items:center;margin-left:12px;font-size:15px;font-weight:600}.edtop .row{gap:6px}
-#edTools .edtrans{display:flex;gap:6px;align-items:center;flex:none}#edTools .edtrans button{min-width:0}#edTools .edtrans #edPlay{min-width:96px;font-size:15px;flex-direction:row}
+#edTools .edtrans{display:flex;gap:6px;align-items:center;flex:none}#edTools .edtrans button{min-width:0}#edTools .edtrans #edPlay{width:104px;font-size:15px;flex-direction:row;justify-content:center}
 .tsep{width:1px;align-self:stretch;background:var(--line);margin:0 4px;flex:none}
 #edTools{display:flex;gap:6px;margin-top:8px;overflow-x:auto;padding-bottom:2px}
 #edTools button{display:flex;flex-direction:column;align-items:center;gap:0;padding:4px 10px;font-size:12px;border-radius:11px;line-height:1.1;min-width:66px;flex:none}
@@ -191,8 +192,8 @@ details.outcard .obody{padding:14px 16px}
 #edMaxBar button{background:rgba(255,255,255,.12);color:#fff;border:0;font-size:16px;padding:8px 12px}
 #edMaxBar input{flex:1;accent-color:#c08bff}#edMaxBar span{color:#fff;font-weight:800;font-variant-numeric:tabular-nums;min-width:110px;text-align:right}
 #edTools button i{font-style:normal;font-size:21px}#edTools button.on{background:var(--grad);color:#fff;border-color:transparent}
-#edPop{position:fixed;right:16px;top:64px;width:min(470px,94vw);max-height:calc(100vh - 84px);overflow:auto;z-index:70;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 60px rgba(60,20,90,.35);padding:0 16px 16px;display:none}
-#edPop.on{display:block}
+#edPop{overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 10px 30px rgba(60,20,90,.18);padding:0 14px 14px;display:none}
+#edPop.on{display:block}#edPop.on~#edDockHint,#edDock:has(#edPop.on) #edDockHint{display:none}
 .pophead{position:sticky;top:0;background:var(--card);display:flex;align-items:center;gap:10px;padding:12px 0 10px;border-bottom:1px solid var(--line);margin-bottom:10px;z-index:2}
 .pophead>span{flex:1}.pophead b{display:block;font-size:18px}.pophead small{color:var(--mute)}
 .popgrp{font-weight:800;font-size:14px;color:var(--mute);margin:10px 0 6px}
@@ -228,7 +229,7 @@ details.outcard .obody{padding:14px 16px}
 #edMsg{position:absolute;left:10px;right:10px;bottom:10px;background:rgba(20,10,30,.82);color:#fff;border-radius:10px;padding:8px 10px;font-size:14px}
 .edbar{height:7px;border-radius:9px;background:rgba(255,255,255,.25);overflow:hidden;margin:4px 0}.edbar i{display:block;height:100%;background:var(--grad)}
 .edtrans{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-#edTime{font-variant-numeric:tabular-nums;font-weight:800;font-size:17px}
+#edTime{font-variant-numeric:tabular-nums;font-weight:800;font-size:16px;display:inline-block;min-width:126px;white-space:nowrap}
 #edTLWrap{position:relative;overflow-x:auto;overflow-y:hidden;border:1px solid var(--line);border-radius:12px;background:var(--field);margin-top:12px}
 #edTL{position:sticky;left:0;display:block;touch-action:none}
 #edTLSpace{height:1px}
@@ -274,10 +275,11 @@ details.edfx{margin-top:8px}details.edfx>summary{cursor:pointer;font-size:15px}
 </div>
 
 <section class="card" id="s0">
-  <h2><span class="n">▶</span>Preview &amp; edit <span id="i0"></span><span class="edtop" onclick="event.stopPropagation()"><span class="row" id="edOuts"></span><button class="small" id="edFullBtn" onclick="edFull()">⛶ Editor full screen</button></span></h2>
+  <h2><span class="n">▶</span>Preview &amp; edit <span id="iEd" onclick="event.stopPropagation()"></span><span class="edtop" onclick="event.stopPropagation()"><span class="row" id="edOuts"></span><button class="small" id="edFullBtn" onclick="edFull()">⛶ Editor full screen</button></span></h2>
   <div class="ed">
+    <div id="edPanel"></div>
     <div id="edLeft">
-      <div id="edStageBox"><div id="edStage"><div id="edFxWrap"><canvas id="edBase"></canvas><div id="edOver"><div id="edInner"><div id="edLogo"></div><div id="edLyr" style="position:absolute;inset:0"></div></div></div><canvas id="edGL"></canvas></div><div id="edFade"></div><div id="edMsg"></div></div>
+      <div id="edStageBox"><div id="edStage"><div id="edFxWrap"><canvas id="edBase"></canvas><div id="edOver"><div id="edInner"><div id="edLogo"></div><div id="edLyr" style="position:absolute;inset:0"></div><div id="edTxt" style="position:absolute;inset:0"></div></div></div><canvas id="edGL"></canvas></div><div id="edFade"></div><div id="edMsg"></div></div>
         <button id="edMaxBtn" onclick="edMax()" title="See the preview full screen">⛶</button>
         <div id="edMaxBar"><button onclick="edJump(-1)" title="Previous screen or picture">⏮</button><button onclick="edSeek(ED.vid.currentTime-5)" title="5 seconds back">−5s</button>
           <button id="edMaxPlay" onclick="edPlay()">▶</button><button onclick="edSeek(ED.vid.currentTime+5)" title="5 seconds on">+5s</button><button onclick="edJump(1)" title="Next screen or picture">⏭</button>
@@ -295,7 +297,7 @@ details.edfx{margin-top:8px}details.edfx>summary{cursor:pointer;font-size:15px}
           <feBlend in="r2" in2="g" mode="screen" result="rg"/><feBlend in="rg" in2="b2" mode="screen"/></filter></svg>
       <div id="edNotes"></div>
     </div>
-    <div id="edPanel"></div>
+    <div id="edDock"><div id="edPop"><div class="pophead"><span id="edPopHead"></span><button class="small" onclick="edPopClose()">Done ✓</button></div><div id="edPopBody"></div></div><div class="hint" id="edDockHint" style="margin:0">Pick a tool in the row below (Filter, Effects, Text…): its choices open here, beside the picture.</div></div>
   </div>
   <div id="edTools">
     <span class="edtrans"><button class="small" onclick="edJump(-1)" title="Previous screen or picture">⏮</button><button class="primary" id="edPlay" onclick="edPlay()" style="min-width:104px">▶ Play</button><button class="small" onclick="edJump(1)" title="Next screen or picture">⏭</button><span id="edTime">0:00</span></span><span class="tsep"></span>
@@ -308,12 +310,13 @@ details.edfx{margin-top:8px}details.edfx>summary{cursor:pointer;font-size:15px}
       <button data-k="text" onclick="edPop('text')" title="Font, colours and size of the lyrics"><i>🔤</i>Text</button>
       <button data-k="edit" onclick="edEditHere()" title="Change the words of the lyric screen under the playhead, or remove it"><i>✏️</i>Lyrics</button>
       <button data-k="add" onclick="edAddScreen()" title="A new lyric screen at the playhead"><i>➕</i>Add lyric</button>
+      <button data-k="addtext" onclick="edAddText()" title="Any text you like (a title, a thank-you, credits) at the playhead"><i>✚</i>Add text</button>
       <button data-k="pics" onclick="edPicsHere()" title="The pictures of the interlude near the playhead"><i>🖼️</i>Pictures</button>
       <button data-k="del" onclick="edDelete()" title="Delete the selected block (or press Delete)"><i>🗑️</i>Delete</button>
     <span class="tsep"></span><button onclick="edZoom(0.67)" title="Timeline: zoom out"><i>➖</i>Zoom out</button><button onclick="edZoom(1.5)" title="Timeline: zoom in"><i>➕</i>Zoom in</button><button onclick="edFit()" title="Timeline: the whole song"><i>↔️</i>Whole song</button>
   </div>
   <div id="edTLWrap"><canvas id="edTL"></canvas><div id="edTLSpace"></div></div>
-  <div id="edPop"><div class="pophead"><span id="edPopHead"></span><button class="small" onclick="edPopClose()">Done ✓</button></div><div id="edPopBody"></div></div>
+
   <div id="edToast"></div>
 </section>
 
@@ -603,7 +606,8 @@ async function api(url,opt){const r=await fetch(url,opt);const j=await r.json();
 function toast(msg){const s=$('#saveState');s.textContent=msg;s.className='dirty';}
 
 const HELP={
- i0:'The preview is drawn in your browser from the same plan the video maker uses: the same lyric times and animations, the cards drawn by the same code, and the picture filters, motions and transitions checked against the video maker frame by frame (tools/check_preview.py). One small difference: lyrics on screen while a transition between her video and a picture runs are not part of the transition in the preview (lyrics are normally not on screen then). Space plays and pauses; the arrow keys step a second (with Shift a tenth). Make the real video in step 8 when it looks right.',
+
+ iEd:'<b>How to edit</b><br>• Move the playhead (click the timeline), then use a tool in the row under the picture: it changes what is under the playhead or what you selected. Its choices open on the right of the picture.<br>• ✂️ <b>Split</b> cuts her video in two, so each part can have its own <b>Filter</b> and <b>Motion</b>.<br>• <b>Click</b> any block on the timeline, or the words on the picture, to change it on the left. <b>Drag</b> blocks to move them and their ends to make them longer or shorter. 🗑️ or the Delete key deletes what is selected.<br>• On the picture: double-click words to type, drag words and her name to place them. ✚ <b>Add text</b> puts any text you like (a title, a thank-you) at the playhead.<br>• Space plays and pauses; the arrow keys step a second (Shift: a tenth).<br><br><b>How close is the preview to the video?</b> The preview is drawn in your browser from the same plan the video maker uses: the same lyric times and animations, the cards drawn by the same code, and the picture filters, motions and transitions checked against the video maker frame by frame (tools/check_preview.py). One small difference: lyrics on screen while a transition between her video and a picture runs are not part of the transition in the preview (lyrics are normally not on screen then). Make the real video in step 8 when it looks right.',
  i1:'A song is one folder in <b>songs/</b> with the raw files and three settings files. A saved look keeps fonts, colours, sizes and transitions so next week\'s song can start from the same style.',
  iLang:'Decides which fonts are offered for lyrics and credits, and the words in front of credits (సినిమా / फ़िल्म and so on).',
  iPre:'<b>house</b> is the look measured from her Srikaramagu video. Choose a look and press Use to copy its fonts, colours and transitions into this song. Save your own under a new name.',

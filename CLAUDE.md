@@ -34,6 +34,8 @@ A local settings page (`settings.py`, port 8766) drives everything. Owner: Ravi 
                      `screen_pos{i: {x, y}}` and `screen_style{i: {lyrics_* keys}}` per screen (added: `pos`, `style`); `look.lyrics_x`;
                      `effects[{type, start, end, amount}]` on the whole frame (fx.effect_graph; editor.js edEffects: the same formulas);
                      transition name "cut" = straight cut (a 0.1 s fade: 1 frame is too short for xfade). content/palettes.json: saved colours.
+                     `texts[{lines, start, end, pos, style, anim}]` free text, drawn with the lyric screens (plan "texts", ids "t0"..);
+                     interlude `pictures[].weight` = that picture's length in seconds (scaled to the interlude; fx.interlude_parts).
 - `content/presets/` saved looks. `brand/` her logo (ignored, upload again on a new machine).
 
 ## Rules learned the hard way
@@ -56,6 +58,8 @@ A local settings page (`settings.py`, port 8766) drives everything. Owner: Ravi 
 - Her phone videos are HDR (HLG, BT.2020) and the builder does not tone-map: the preview copy is marked SDR with the same values, and
   the preview loads pictures without colour management (snapshots carry HDR cICP tags), so it shows what the video really gets.
 - `pipeline.sig()` resolves paths: a song named as songs/x or by its full path shares the same caches.
+- Preview and video can be wrong in the same way and still "match" (a reused loop variable once made all text size 0 in both):
+  the video check also asserts the free text is visible. Don't reuse `k` (the text scale) inside `output_plan`.
 
 ## Common commands
 ```

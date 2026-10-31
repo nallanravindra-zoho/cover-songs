@@ -75,7 +75,7 @@ function edSizeStage() {
   else {
     const room = innerHeight - tlH() - (ED.full ? 100 : 150), cardW = $e('s0').clientWidth - 48;
     h = Math.max(320, Math.min(side ? 640 : 1000, room)); w = Math.round(h * ar);
-    const maxW = side ? cardW * 0.66 : cardW * 0.55;
+    const maxW = side ? cardW * 0.5 : cardW * 0.42;
     if (w > maxW) { w = Math.round(maxW); h = Math.round(w / ar); }
     box.style.width = w + 'px'; box.style.height = h + 'px';
     // measure: the card from its top to the timeline's bottom must fit in the window; shrink the picture by what is over
@@ -236,13 +236,15 @@ function edFrame() {
   if (!v.paused && t >= P.clip[1]) { v.pause(); v.currentTime = P.clip[1] - 0.05; }
   if (!edDrawBase()) return;
   const frame = Math.floor(t * 30);
-  edLyrics(t); edPictures(t, frame); edEffects(t);
+  edLyrics(t); edTexts(t); edPictures(t, frame); edEffects(t);
   if (ED.pop && performance.now() - (ED.popAt || 0) > 300) { ED.popAt = performance.now(); edPopFollow(); }
   const f = P.fade, a = P.clip[0], b = P.clip[1];
   $e('edFade').style.opacity = f > 0 ? Math.max(0, 1 - Math.min((t - a) / f, (b - t) / f)) : 0;
-  $e('edTime').textContent = fmt(t) + ' / ' + fmt(P.dur);
-  if (document.fullscreenElement) { $e('edMaxTime').textContent = fmt(t) + ' / ' + fmt(P.dur); const sk = $e('edMaxSeek'); sk.max = P.dur; if (document.activeElement !== sk) sk.value = t; $e('edMaxPlay').textContent = v.paused ? '▶' : '❚❚'; }
-  $e('edPlay').textContent = v.paused ? '▶ Play' : '❚❚ Pause';
+  // a clock with a fixed shape (m:ss.t), changed only when it changes: a clock that grows and shrinks shifts the tool row
+  const clk = clock(t) + ' / ' + clock(P.dur), play = v.paused ? '▶ Play' : '❚❚ Pause';
+  if (clk !== ED.clk) { ED.clk = clk; $e('edTime').textContent = clk; }
+  if (play !== ED.playTxt) { ED.playTxt = play; $e('edPlay').textContent = play; }
+  if (document.fullscreenElement) { $e('edMaxTime').textContent = clk; const sk = $e('edMaxSeek'); sk.max = P.dur; if (document.activeElement !== sk) sk.value = t; $e('edMaxPlay').textContent = v.paused ? '▶' : '❚❚'; }
   if (!v.paused || ED.tlDirty) { edDrawTL(); ED.tlDirty = false; }
 }
 function edPlay() {
@@ -268,8 +270,8 @@ function edMsg() {
 }
 
 // ---------- timeline ----------
-const TL = { ruler: 20, wave: 30, eff: 20, vid: 24, lyr: 34, pic: 38, pad: 4 };
-function tlH() { return TL.ruler + TL.wave + TL.eff + TL.vid + TL.lyr + TL.pic + TL.pad * 5; }
+const TL = { ruler: 20, wave: 28, eff: 20, txt: 22, vid: 22, lyr: 32, pic: 36, pad: 4 };
+function tlH() { return TL.ruler + TL.wave + TL.eff + TL.txt + TL.vid + TL.lyr + TL.pic + TL.pad * 6; }
 function tlX(t) { return t * ED.pxs - ED.scroll; }
 function tlT(x) { return (x + ED.scroll) / ED.pxs; }
 function edFit() { const P = ED.plan; if (!P) return; ED.pxs = Math.max(0.5, ($e('edTLWrap').clientWidth - 4) / P.dur); edTLSize(); }
@@ -280,8 +282,8 @@ function edZoom(f) {
   w.scrollLeft = Math.max(0, tc * ED.pxs - before); edDrawTL();
 }
 function edTLSize() { const P = ED.plan; if (!P) return; $e('edTLSpace').style.width = Math.ceil(P.dur * ED.pxs) + 'px'; edDrawTL(); }
-function tlRows() { const y0 = TL.ruler, ye = y0 + TL.wave + TL.pad, yv = ye + TL.eff + TL.pad, y1 = yv + TL.vid + TL.pad, y2 = y1 + TL.lyr + TL.pad;
-  return { wave: [y0, TL.wave], eff: [ye, TL.eff], vid: [yv, TL.vid], lyr: [y1, TL.lyr], pic: [y2, TL.pic] }; }
+function tlRows() { const y0 = TL.ruler, ye = y0 + TL.wave + TL.pad, yt = ye + TL.eff + TL.pad, yv = yt + TL.txt + TL.pad, y1 = yv + TL.vid + TL.pad, y2 = y1 + TL.lyr + TL.pad;
+  return { wave: [y0, TL.wave], eff: [ye, TL.eff], txt: [yt, TL.txt], vid: [yv, TL.vid], lyr: [y1, TL.lyr], pic: [y2, TL.pic] }; }
 function edEff(i) { return effTimes(i); }
 // every lyric screen of the song (not only the ones in this video) with its current times and the changes made here:
 // new words (screen_text), taken out (screen_off), added (added_screens, ids "a0", "a1", ..). Same rules as pipeline.edited_screens.
@@ -353,6 +355,14 @@ function edDrawTL() {
     if (on) { g.strokeStyle = '#fff'; g.lineWidth = 3; g.stroke(); g.strokeStyle = '#ff2d6f'; g.lineWidth = 1.5; g.stroke(); }
     if (w > 24) { g.save(); g.beginPath(); g.rect(x + 3, ey, w - 6, eh); g.clip(); g.fillStyle = '#3a2000'; g.font = 'bold 11.5px Manrope,sans-serif';
       g.fillText((EFF_ICON[e.type] || '') + ' ' + ((FX_EFF[e.type] || {}).label || e.type), x + 5, ey + eh / 2 + 4); g.restore(); } });
+  // free text
+  const [ty, th] = R.txt;
+  g.fillStyle = 'rgba(127,127,160,.08)'; g.fillRect(0, ty, W, th);
+  (S.config.texts || []).forEach((x, k) => { if (x.end < t0 || x.start > t1) return;
+    const xx = tlX(x.start), w = Math.max(4, tlX(x.end) - xx), on = sel0 && sel0.kind === 'text' && sel0.k === k;
+    g.fillStyle = 'rgba(40,150,240,.92)'; rr(g, xx, ty + 2, w, th - 4, 5); g.fill();
+    if (on) { g.strokeStyle = '#fff'; g.lineWidth = 3; g.stroke(); g.strokeStyle = '#ff2d6f'; g.lineWidth = 1.5; g.stroke(); }
+    if (w > 24) { g.save(); g.beginPath(); g.rect(xx + 3, ty, w - 6, th); g.clip(); g.fillStyle = '#fff'; g.font = 'bold 11.5px Manrope,sans-serif'; g.fillText('🅣 ' + (x.lines || [''])[0], xx + 5, ty + th / 2 + 4); g.restore(); } });
   // her video, in clips
   const [vy, vh] = R.vid;
   edClips().forEach(c => { if (c.end < t0 || c.start > t1) return;
@@ -386,14 +396,14 @@ function edDrawTL() {
     (p.parts || [{ url: p.url, s: 0, e: p.end - p.start }]).forEach((q, j) => {
       const it = ED.imgs[q.url], qx = tlX(p.start + q.s), qw = tlX(p.start + q.e) - qx;
       if (it && it.ok && qw > 16) { const tw = Math.min(qw - 6, (ph - 12) * 9 / 16); g.save(); g.beginPath(); rr(g, qx + 3, py + 6, tw, ph - 12, 4); g.clip(); coverDraw(g, it.im, it.im.width, it.im.height, qx + 3, py + 6, tw, ph - 12); g.restore(); }
-      if (j) { g.fillStyle = '#fff'; g.fillRect(qx, py + 4, 2, ph - 8); } });
+      if (j && p.kind === 'interlude') { const xb = tlX(p.start + partBound(p, j)); g.fillStyle = '#fff'; g.fillRect(xb - 1.5, py + 2, 3, ph - 4); g.beginPath(); g.arc(xb, py + ph / 2, 4.5, 0, 7); g.fill(); } });   // the line between two pictures: drag it
     if (on) { rr(g, x, py + 3, w, ph - 6, 6); g.strokeStyle = '#fff'; g.lineWidth = 3; g.stroke(); g.strokeStyle = '#ff2d6f'; g.lineWidth = 1.5; g.stroke(); }
     g.fillStyle = 'rgba(255,255,255,.85)'; if (p.kind !== 'opening') g.fillRect(x + 1, py + 12, 2, ph - 24); if (p.kind !== 'ending') g.fillRect(x + w - 3, py + 12, 2, ph - 24);
     const lab = p.kind === 'opening' ? 'Opening card' : p.kind === 'ending' ? 'End card' : `Interlude${(p.parts || []).length > 1 ? ' · ' + p.parts.length + ' pictures' : ''}`;
     if (w > 70) { g.save(); g.beginPath(); g.rect(x, py, w, ph); g.clip(); g.fillStyle = '#fff'; g.font = 'bold 12px Manrope,sans-serif'; g.shadowColor = '#000'; g.shadowBlur = 4;
       g.fillText(lab, x + Math.min(w - 60, (ph - 12) * 9 / 16 + 10), py + ph / 2 + 4); g.restore(); } });
   g.fillStyle = ink; g.globalAlpha = .7; g.font = '11px Manrope,sans-serif';
-  g.fillText('effects', 4, ey - 1); g.fillText('video', 4, vy - 1); g.fillText('lyrics', 4, ly - 1); g.fillText('pictures', 4, py - 1); g.globalAlpha = 1;
+  g.fillText('effects', 4, ey - 1); g.fillText('text', 4, ty - 1); g.fillText('video', 4, vy - 1); g.fillText('lyrics', 4, ly - 1); g.fillText('pictures', 4, py - 1); g.globalAlpha = 1;
   // pictures and cards switched off: faint outlines (click to bring back); transitions: small diamonds (click to change or delete)
   g.setLineDash([4, 3]); g.lineWidth = 1.5; g.strokeStyle = 'rgba(20,170,150,.8)';
   edOffPics().forEach(o => { const x = tlX(o.start), w = Math.max(4, tlX(o.end) - x); rr(g, x + 1, py + 5, w - 2, ph - 10, 6); g.stroke();
@@ -415,6 +425,8 @@ function rr(g, x, y, w, h, r) { g.beginPath(); g.roundRect ? g.roundRect(x, y, w
 function tlHit(x, y) {
   const R = tlRows(), t = tlT(x), edge = 9;
   const inRow = r => y >= R[r][0] && y < R[r][0] + R[r][1];
+  if (inRow('txt')) for (let k = (S.config.texts || []).length - 1; k >= 0; k--) { const e = S.config.texts[k], a = tlX(e.start), b = tlX(e.end);
+    if (x >= a - 3 && x <= b + 3) return { kind: 'text', k, e, zone: x - a < edge && b - a > 2 * edge ? 'start' : b - x < edge && b - a > 2 * edge ? 'end' : 'move' }; }
   if (inRow('eff')) for (let k = (S.config.effects || []).length - 1; k >= 0; k--) { const e = S.config.effects[k], a = tlX(e.start), b = tlX(e.end);
     if (x >= a - 3 && x <= b + 3) return { kind: 'effect', k, e, zone: x - a < edge && b - a > 2 * edge ? 'start' : b - x < edge && b - a > 2 * edge ? 'end' : 'move' }; }
   if (inRow('pic') && y > R.pic[0] + R.pic[1] - 14) for (const c of edTransList()) if (Math.abs(x - tlX(c.at)) < 8) return { kind: 'trans', c, zone: 'none' };
@@ -424,6 +436,8 @@ function tlHit(x, y) {
     if (x >= a - edge / 2 && x <= b + edge / 2) return { kind: 'screen', i: s.i, s, zone: x - a < edge && b - a > 2 * edge ? 'start' : b - x < edge && b - a > 2 * edge ? 'end' : x - a < edge ? 'start' : b - x < edge ? 'end' : 'move' }; }
   if (inRow('pic')) for (const o of edOffPics()) if (x >= tlX(o.start) && x <= tlX(o.end) && !(ED.plan.pics || []).some(p => x >= tlX(p.start) && x <= tlX(p.end))) return { kind: 'off', o, zone: 'none' };
   if (inRow('lyr')) for (const s of edScreens(true).filter(s => s.off)) if (x >= tlX(s.start) && x <= tlX(s.end)) return { kind: 'screen', i: s.i, s, zone: 'none' };
+  if (inRow('pic') && ED.plan) for (const p of ED.plan.pics) for (let j = 1; j < (p.parts || []).length; j++) {
+    const xb = tlX(p.start + partBound(p, j)); if (Math.abs(x - xb) < 6) return { kind: 'pbound', p, j, zone: 'ew' }; }
   if (inRow('pic') && ED.plan) for (const p of ED.plan.pics) { const a = tlX(p.start), b = tlX(p.end);
     if (x >= a && x <= b) { let zone = x - a < edge ? 'start' : b - x < edge ? 'end' : 'move';
       if (p.kind === 'opening') zone = zone === 'end' ? 'end' : 'none'; if (p.kind === 'ending') zone = zone === 'start' ? 'start' : 'none';
@@ -466,8 +480,17 @@ function tlMove(ev) {
     setScreenTimes(h.i, a, b);
     d.label = h.zone === 'end' ? 'ends ' + fmt(b) : h.zone === 'start' ? 'starts ' + fmt(a) : fmt(a) + ' – ' + fmt(b);
     edLocalScreen(h.i, a, b); edSeek(h.zone === 'end' ? Math.max(a, b - 1) : a);
-  } else if (h.kind === 'effect') {
-    const e = S.config.effects[h.k], len = d.e0 - d.s0;
+  } else if (h.kind === 'pbound') {
+    const p = ED.plan.pics.find(x => x.kind === 'interlude' && x.n === h.p.n), pics = ilPics(p.n - 1), len = p.end - p.start;
+    if (!d.b0) d.b0 = partLens(p);                                    // each picture's length when the drag began
+    const L = d.b0.slice(), lo = 1, cut = L.slice(0, h.j).reduce((a, b) => a + b, 0);
+    const nb = Math.max(cut - L[h.j - 1] + lo, Math.min(cut + L[h.j] - lo, cut + dt));
+    L[h.j - 1] = nb - (cut - L[h.j - 1]); L[h.j] = L[h.j] - (nb - cut);
+    pics.forEach((q, j) => q.weight = Math.round(L[j] * 100) / 100);
+    p.parts.forEach((q, j) => Object.assign(q, partTimes(p, j)));
+    d.label = `picture ${h.j}: ${L[h.j - 1].toFixed(1)} s · picture ${h.j + 1}: ${L[h.j].toFixed(1)} s`; edSeek(p.start + nb);
+  } else if (h.kind === 'effect' || h.kind === 'text') {
+    const e = (h.kind === 'text' ? S.config.texts : S.config.effects)[h.k], len = d.e0 - d.s0;
     if (h.zone === 'start') e.start = r2(Math.max(0, Math.min(d.e0 - 0.2, d.s0 + dt)));
     else if (h.zone === 'end') e.end = r2(Math.min(ED.plan.dur, Math.max(d.s0 + 0.2, d.e0 + dt)));
     else { e.start = r2(Math.max(0, Math.min(ED.plan.dur - len, d.s0 + dt))); e.end = r2(e.start + len); }
@@ -504,6 +527,7 @@ function tlUp(ev) {
     if (h.kind === 'screen') { edSelect({ kind: 'screen', i: h.i }); edSeek(h.s.start + 0.05); }
     else if (h.kind === 'clip') { edSelect({ kind: 'clip', k: h.k }); }
     else if (h.kind === 'effect') { edSelect({ kind: 'effect', k: h.k }); edSeek(h.e.start); }
+    else if (h.kind === 'text') { edSelect({ kind: 'text', k: h.k }); edSeek(h.e.start + Math.min(1, (h.e.end - h.e.start) / 2)); }
     else if (h.kind === 'trans') { edSelect({ kind: 'trans', key: h.c.key }); edSeek(Math.max(0, h.c.go)); edPop('trans', h.c); }
     else if (h.kind === 'off') { edSelect({ kind: 'off', o: h.o }); edSeek(h.o.start); }
     else if (h.kind === 'interlude') { edSelect({ kind: 'interlude', n: h.n }); edSeek(h.p.start); }
@@ -530,9 +554,7 @@ const ADJ = [['b', 'Brightness', .5, 1.5, .01, 1], ['c', 'Contrast', .5, 1.6, .0
 function edPanel() {
   const box = $e('edPanel'); if (!box || !S) return;
   const sel = ED.sel, P = ED.plan;
-  if (!sel || !P || !P.ready) { box.innerHTML = `<div class="hint" style="margin:0;font-size:16px"><b>How to edit</b><br>• Move the playhead (click the timeline), then use a tool on the left: it changes what is under the playhead.<br>
-    • ✂️ <b>Split</b> cuts her video in two, so each part can have its own <b>Filter</b> and <b>Motion</b>.<br>• Drag blocks on the timeline to move them, drag their ends to make them longer or shorter; double-click a lyric block to go back to its automatic time.<br>
-    • Click any block to change it here.</div>`; return; }
+  if (!sel || !P || !P.ready) { box.innerHTML = `<div class="hint" style="margin:0">Click a block on the timeline, or the words on the picture, and its settings show here. How it all works: the <b>i</b> next to “Preview &amp; edit”.</div>`; return; }
   if (sel.kind === 'screen') {
     const sc = edScreens(true).find(x => x.i === sel.i); if (!sc) { ED.sel = null; return edPanel(); }
     const id = typeof sel.i === 'string' ? "'" + sel.i + "'" : sel.i, an = Anim.FX[sc.anim] ? Anim.FX[sc.anim].label : 'same as the others';
@@ -569,6 +591,17 @@ function edPanel() {
       <div class="row"><button class="small" onclick="openCard(document.getElementById('s8'),true);document.getElementById('s8').scrollIntoView({behavior:'smooth'})">Go to step 7</button><button class="small" onclick="edDelete()">🗑 Delete card</button><button class="small" onclick="edSelect(null)">Done</button></div>`;
     $$('#edPanel [data-path]').forEach(bind); fillPhotoSelects(); return;
   }
+  if (sel.kind === 'text') {
+    const x = (S.config.texts || [])[sel.k]; if (!x) { ED.sel = null; return edPanel(); }
+    const id = `'t${sel.k}'`;
+    box.innerHTML = `<h3 style="margin-top:0">🅣 Text <small class="hint">${fmt(x.start)} – ${fmt(x.end)}</small></h3>
+      <label class="l">Words (one line per line on screen)</label><textarea id="edWords" style="font-size:19px;min-height:70px" oninput="edWords(${id},this.value)">${esc((x.lines || []).join('\n'))}</textarea>
+      <div class="row" style="margin-top:8px"><label class="l" style="margin:0">Animation</label><select onchange="S.config.texts[${sel.k}].anim=this.value||undefined;mark();ED.txtKey={};edRefreshSoon(0)"><option value="">Same as the lyrics</option>${Anim.groups.map(gr => `<optgroup label="${gr}">${Anim.EFFECTS.filter(f => f.group === gr).map(f => `<option value="${f.id}" ${f.id === x.anim ? 'selected' : ''}>${f.label}</option>`).join('')}</optgroup>`).join('')}</select>
+      <button class="small" onclick="edSeek(${x.start});ED.vid.play()">▶ Play it</button><button class="small" onclick="edDelete()">🗑 Delete</button><button class="small" onclick="edSelect(null)">Done</button></div>
+      ${edStyleTools(`t${sel.k}`)}
+      <div class="hint" style="margin-top:8px">Drag the words on the picture to place them, double-click them to type there. On the timeline (blue “text” row) drag the block to move it in time and its ends to set how long it shows.</div>`;
+    return;
+  }
   if (sel.kind === 'effect') {
     const e = (S.config.effects || [])[sel.k]; if (!e) { ED.sel = null; return edPanel(); }
     box.innerHTML = `<h3 style="margin-top:0">${EFF_ICON[e.type] || ''} ${esc((FX_EFF[e.type] || {}).label || e.type)} <small class="hint">${fmt(e.start)} – ${fmt(e.end)}</small></h3>
@@ -599,7 +632,7 @@ function edPanel() {
     <div class="edpics">${pics.map((q, j) => edPicCard(g, q, j, pics.length)).join('')}</div>
     <div class="row" style="margin-top:10px"><button class="primary small" onclick="ilPics(${g}).push({photo:''});edChanged();edPanel()">+ Add a picture</button>
     <button class="small" onclick="photoIn.click()">Upload photos</button><button class="small" onclick="edDelete()">🗑 Delete interlude</button><button class="small" onclick="edSelect(null)">Done</button></div>
-    <div class="hint" style="margin-top:6px">The pictures share the interlude's time equally, one after another. Each has its own filter and motion, and its own transition from the picture before it.</div>`;
+    <div class="hint" style="margin-top:6px">The pictures follow one another. Drag the white line between two pictures on the timeline (or type a length) to show one longer; drag the interlude's ends to stretch them all. Each has its own filter, motion and transition from the picture before it.</div>`;
   edThumbs();
 }
 function edPicCard(g, q, j, n) {
@@ -610,6 +643,7 @@ function edPicCard(g, q, j, n) {
       <div style="margin-top:6px"><select onchange="ilPics(${g})[${j}].photo=this.value;edChanged();edPanel()"><option value="">Default picture</option>${S.photos.map(f => `<option value="${esc(f)}" ${q.photo === f ? 'selected' : ''}>${esc(f)}</option>`).join('')}</select></div>
       <div class="grid" style="margin-top:8px;gap:8px">
         <div><label class="l">Motion</label><select onchange="ilPics(${g})[${j}].motion=this.value;edChanged()">${moOptions(q.motion || def)}</select></div>
+        ${n > 1 ? `<div><label class="l">Shows for (seconds)</label><input type="number" min="1" step="0.5" style="width:90px" value="${(() => { const p = ED.plan && ED.plan.pics.find(x => x.kind === 'interlude' && x.n === g + 1); return p ? partLens(p)[j].toFixed(1) : ''; })()}" onchange="edSetPicLen(${g + 1},${j},this.value)"></div>` : ''}
         ${j ? `<div><label class="l">Transition from picture ${j}</label><select onchange="ilPics(${g})[${j}].trans=this.value||undefined;edChanged()">${trOptions(q.trans, bt.name)}</select></div>` : ''}
       </div>
       <div class="row" style="margin-top:8px">${j ? `<button class="small" onclick="edMovePic(${g},${j},-1)">↑ Earlier</button>` : ''}${j < n - 1 ? `<button class="small" onclick="edMovePic(${g},${j},1)">↓ Later</button>` : ''}
@@ -659,16 +693,33 @@ function edTextTools(open) {
 }
 // drag the lyrics (up/down) or her name (anywhere) on the picture
 function posOf(id) {               // a screen's own place on the picture ({x, y}), or undefined
+  if (isText(id)) { const x = S.config.texts[+id.slice(1)]; return x && (x.pos || { x: 0, y: 0.72 }); }
   if (typeof id === 'string') { const a = (S.config.added_screens || [])[+id.slice(1)]; return a && a.pos; }
   return (S.config.screen_pos || {})[id];
 }
 function setPos(id, v) {
+  if (isText(id)) { S.config.texts[+id.slice(1)].pos = v || { x: 0, y: 0.72 }; return; }
   if (typeof id === 'string') { const a = S.config.added_screens[+id.slice(1)]; if (v) a.pos = v; else delete a.pos; }
   else { const P = S.config.screen_pos = S.config.screen_pos || {}; if (v) P[id] = v; else delete P[id]; }
 }
 // drag the lyrics (up, down, sideways) or her name on the picture. With a lyric screen selected, only that screen moves.
+function edTextAt(ev) {             // the free text under the pointer, topmost first
+  const els = [...($e('edTxt') || { children: [] }).children].reverse();
+  for (const el of els) { const b = el.firstElementChild && el.firstElementChild.getBoundingClientRect(); if (!b) continue;
+    const ln = [...el.querySelectorAll('.ln')].map(x => x.getBoundingClientRect()); const l = Math.min(...ln.map(r => r.left)), r = Math.max(...ln.map(r => r.right));
+    if (ev.clientY >= b.top && ev.clientY <= b.bottom && ev.clientX >= l - 10 && ev.clientX <= r + 10) return el.dataset.t; }
+  return null;
+}
 function edStageDown(ev) {
   if (!ED.plan || ev.target.id === 'edInline') return;
+  const tid = edTextAt(ev);
+  if (tid) {                          // a free text: click selects it, drag places it
+    ev.preventDefault(); const k = +tid.slice(1), box = $e('edOver').getBoundingClientRect(), p0 = Object.assign({ x: 0, y: 0.72 }, S.config.texts[k].pos), x0 = ev.clientX, y0 = ev.clientY; let moved = false;
+    const mv = e => { const dx = (e.clientX - x0) / box.width, dy = (e.clientY - y0) / box.height; if (Math.abs(e.clientX - x0) + Math.abs(e.clientY - y0) > 4) moved = true; if (!moved) return;
+      S.config.texts[k].pos = { x: +Math.max(-.4, Math.min(.4, p0.x + dx)).toFixed(3), y: +Math.max(0, Math.min(.95, p0.y + dy)).toFixed(3) }; ED.txtKey = {}; mark(); };
+    const up = () => { document.removeEventListener('pointermove', mv); document.removeEventListener('pointerup', up); ED.vid.pause(); edSelect({ kind: 'text', k }); if (moved) edRefreshSoon(); };
+    document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up); return;
+  }
   const box = $e('edOver').getBoundingClientRect(), x = (ev.clientX - box.left) / box.width;
   if (x < 0 || x > 1) return;
   const L = edLook(), o = edOutCfg();
@@ -698,6 +749,8 @@ function edStageDown(ev) {
 }
 // double-click the lyrics on the picture to type the words there
 function edInline(ev) {
+  const tid = ev && edTextAt(ev);
+  if (tid) return edInlineText(tid);
   const s = ED.plan && edScreenAt(ED.vid.currentTime), blk = $e('edLyr').firstElementChild;
   if (!s || !blk) return;
   const r = blk.getBoundingClientRect(), st = $e('edStage').getBoundingClientRect();
@@ -767,6 +820,7 @@ function edEditInterlude(n) {      // from the lists in steps 4 and 5: open the 
 // ---------- changing the lyrics in the preview ----------
 function edWords(id, text) {
   const lines = text.split('\n').map(x => x.trim()).filter(Boolean);
+  if (isText(id)) { S.config.texts[+id.slice(1)].lines = lines; mark(); ED.txtKey = {}; return; }
   if (typeof id === 'string') S.config.added_screens[+id.slice(1)].lines = lines;
   else { const t = S.config.screen_text = S.config.screen_text || {}; if (lines.length && lines.join('\n') !== SCR[id].lines.join('\n')) t[id] = lines; else delete t[id]; }
   mark(); edLocalWords(id, lines); edDrawTL();
@@ -802,8 +856,8 @@ function edTarget(t) {
 function fxOf(tg) { return tg.kind === 'part' ? ilPics(tg.n - 1)[tg.j] : (() => { const v = vcCfg(), n = edClips().length; while (v.fx.length < n) v.fx.push({}); return v.fx[tg.k]; })(); }
 function edPop(kind, trans) {
   ED.pop = kind; ED.popT = edTarget(ED.vid.currentTime); ED.popFixed = trans || null; edPopRender();
-  const pop = $e('edPop'), tl = $e('edTLWrap').getBoundingClientRect();   // above the timeline, so the timeline stays usable
-  pop.style.maxHeight = Math.max(320, (tl.top > 200 ? tl.top : innerHeight) - 64 - 10) + 'px';
+  const pop = $e('edPop');                                          // beside the picture, as tall as it
+  pop.style.maxHeight = Math.max(320, $e('edStage').getBoundingClientRect().height + 60) + 'px';
   pop.classList.add('on'); $$('#edTools button').forEach(b => b.classList.toggle('on', b.dataset.k === kind));
 }
 function edPopClose() { ED.pop = null; $e('edPop').classList.remove('on'); $$('#edTools button').forEach(b => b.classList.remove('on')); }
@@ -1030,6 +1084,7 @@ function edDelete() {
   const C = S.config, done = m => { mark(); renderDetected(); edRefreshSoon(0); edDrawTL(); edPanel(); toastEd(m); };
   if (sel.kind === 'screen') return edRemoveScreen(sel.i);
   if (sel.kind === 'effect') { C.effects.splice(sel.k, 1); ED.sel = null; return done('Effect deleted.'); }
+  if (sel.kind === 'text') { C.texts.splice(sel.k, 1); ED.sel = null; ED.txtKey = {}; return done('Text deleted.'); }
   if (sel.kind === 'interlude') { ilOv(sel.n - 1).on = false; ED.sel = null; return done('Interlude deleted: her video plays there. Click its outline to bring it back.'); }
   if (sel.kind === 'opening' || sel.kind === 'ending') { C[sel.kind].enabled = false; ED.sel = null; return done((sel.kind === 'opening' ? 'Opening' : 'End') + ' card deleted. Click its outline to bring it back.'); }
   if (sel.kind === 'trans') { const c = edTransList().find(x => x.key === sel.key); if (c) { ED.popTr = c; edSetTrans('cut'); } ED.sel = null; return done('Transition deleted: a straight cut now.'); }
@@ -1058,27 +1113,29 @@ document.addEventListener('mousemove', () => { if (!document.fullscreenElement) 
 const STYLE_KEYS = ['lyrics_font', 'lyrics_weight', 'lyrics_size', 'lyrics_fill_left', 'lyrics_fill_mid', 'lyrics_fill_right', 'lyrics_outline', 'lyrics_outline_w', 'lyrics_glow'];
 function styleOf(id) {
   if (id == null) return null;
+  if (isText(id)) { const x = S.config.texts[+id.slice(1)]; return x && x.style; }
   if (typeof id === 'string') { const a = (S.config.added_screens || [])[+id.slice(1)]; return a && a.style; }
   return (S.config.screen_style || {})[id];
 }
 function setStyle(id, vals) {             // vals: {key: value}; to all lyrics (id null or "all") or to this screen
-  if (ED.styleAll || id == null) { Object.assign(S.config.look, vals); renderStyle(); renderAnim(); updatePreviews(); }
+  if (isText(id)) { const x = S.config.texts[+id.slice(1)]; x.style = Object.assign(x.style || {}, vals); }
+  else if (ED.styleAll || id == null) { Object.assign(S.config.look, vals); renderStyle(); renderAnim(); updatePreviews(); }
   else if (typeof id === 'string') { const a = S.config.added_screens[+id.slice(1)]; a.style = Object.assign(a.style || {}, vals); }
   else { const st = S.config.screen_style = S.config.screen_style || {}; st[id] = Object.assign(st[id] || {}, vals); }
   mark(); ED.lastScreen = null; edRefreshSoon(); edPanel(); if (ED.pop === 'text') edPopRender();
 }
 function clearStyle(id) {
-  if (typeof id === 'string') delete S.config.added_screens[+id.slice(1)].style; else delete (S.config.screen_style || {})[id];
+  if (isText(id)) delete S.config.texts[+id.slice(1)].style; else if (typeof id === 'string') delete S.config.added_screens[+id.slice(1)].style; else delete (S.config.screen_style || {})[id];
   mark(); ED.lastScreen = null; edRefreshSoon(); edPanel(); if (ED.pop === 'text') edPopRender();
 }
 function edStyleTools(id, wide) {
   if (ED.styleAll == null) ED.styleAll = true;
-  const own = styleOf(id), all = id == null || ED.styleAll, L = Object.assign({}, S.config.look, all ? {} : own || {});
-  const words = id != null ? ((edScreens(true).find(x => x.i === id) || {}).lines || [''])[0] : (S.config.language === 'hindi' ? 'बचपन की' : 'శ్రీకరమగు');
+  const own = styleOf(id), all = !isText(id) && (id == null || ED.styleAll), L = Object.assign({}, S.config.look, all ? {} : own || {});
+  const words = isText(id) ? (S.config.texts[+id.slice(1)].lines || [''])[0] : id != null ? ((edScreens(true).find(x => x.i === id) || {}).lines || [''])[0] : (S.config.language === 'hindi' ? 'बचपन की' : 'శ్రీకరమగు');
   const sample = (words || '').slice(0, 14), jid = typeof id === 'string' ? `'${id}'` : id;
   const fonts = fontList('lang');
   return `<div class="edstyle${wide ? ' wide' : ''}">
-    ${id != null ? `<div class="row" style="margin:8px 0"><b>Text style for</b><button class="small ${all ? 'primary' : ''}" onclick="ED.styleAll=true;edPanel();if(ED.pop==='text')edPopRender()">All lyrics</button><button class="small ${all ? '' : 'primary'}" onclick="ED.styleAll=false;edPanel();if(ED.pop==='text')edPopRender()">Only this screen</button>
+    ${id != null && !isText(id) ? `<div class="row" style="margin:8px 0"><b>Text style for</b><button class="small ${all ? 'primary' : ''}" onclick="ED.styleAll=true;edPanel();if(ED.pop==='text')edPopRender()">All lyrics</button><button class="small ${all ? '' : 'primary'}" onclick="ED.styleAll=false;edPanel();if(ED.pop==='text')edPopRender()">Only this screen</button>
       ${own ? `<button class="small" onclick="clearStyle(${jid})">Undo this screen's own style</button>` : ''}</div>` : ''}
     <div class="popgrp">Font</div><div class="fonttiles">${fonts.map(f => `<div class="ftile ${f === L.lyrics_font ? 'on' : ''}" onclick="setStyle(${jid},{lyrics_font:'${f.replace(/'/g, "\\'")}'})"><b style="font-family:${fontCss(f)};font-weight:${L.lyrics_weight}">${esc(sample)}</b><small>${esc(f)}</small></div>`).join('')}</div>
     <div class="row" style="margin-top:8px"><b>Size</b><button class="small" onclick="setStyle(${jid},{lyrics_size:Math.max(30,${L.lyrics_size}-4)})">−</button><b>${L.lyrics_size}</b><button class="small" onclick="setStyle(${jid},{lyrics_size:Math.min(140,${L.lyrics_size}+4)})">+</button>
@@ -1146,4 +1203,67 @@ function edIdeas(jid) {
     <div class="row" style="gap:4px;justify-content:space-between"><small>${esc(p.name)}</small>${p.fav ? '' : `<button class="small" title="Save: offered again in every song" onclick='edFav(${JSON.stringify({ name: p.name, c: p.c })})'>♥</button>`}</div></div>`).join('')
     || '<span class="hint">No idea stands out enough here: try the colour pickers.</span>';
   ED.ideas = { id: typeof jid === 'string' ? jid.replace(/'/g, '') : jid, html }; box.innerHTML = html;
+}
+
+function clock(t) { t = Math.max(0, t || 0); const m = Math.floor(t / 60), s = t - m * 60; return m + ':' + (s < 10 ? '0' : '') + s.toFixed(1); }
+
+// ---------- each picture's share of its interlude (same rule as fx.interlude_parts) ----------
+function partWeights(p) { const pics = ilPics(p.n - 1), any = pics.some(q => q.weight); return pics.map(q => any ? Math.max(0.05, +q.weight || 1) : 1); }
+function partBound(p, j) { const w = partWeights(p), W = w.reduce((a, b) => a + b, 0); return (p.end - p.start) * w.slice(0, j).reduce((a, b) => a + b, 0) / W; }
+function partLens(p) { const n = p.parts.length; return Array.from({ length: n }, (_, j) => partBound(p, j + 1) - partBound(p, j)); }
+function partTimes(p, j) {
+  const q = p.parts[j], n = p.parts.length, b = k => partBound(p, k), next = p.parts[j + 1];
+  return { s: j ? b(j) - q.din / 2 : 0, e: j === n - 1 ? p.end - p.start : b(j + 1) + (next ? next.din / 2 : 0) };
+}
+function edSetPicLen(n, j, v) {     // one picture's length in seconds; the others keep theirs, all scaled to fit the interlude
+  const p = ED.plan.pics.find(x => x.kind === 'interlude' && x.n === n); if (!p) return;
+  const L = partLens(p); L[j] = Math.max(1, +v || 1);
+  ilPics(n - 1).forEach((q, k) => q.weight = Math.round(L[k] * 100) / 100); edChanged(); edPanel();
+}
+
+// ---------- free text (titles, thanks, credits ..): S.config.texts = [{lines, start, end, pos, style, anim}] ----------
+function isText(id) { return typeof id === 'string' && id[0] === 't'; }
+function edAddText() {
+  const t = r2(ED.vid.currentTime), T = S.config.texts = S.config.texts || [];
+  T.push({ lines: ['Your text here'], start: t, end: r2(Math.min(ED.plan.dur, t + 4)), pos: { x: 0, y: 0.72 }, style: { lyrics_size: Math.round(S.config.look.lyrics_size * 0.8) } });
+  mark(); ED.txtKey = {}; edSelect({ kind: 'text', k: T.length - 1 }); edRefreshSoon(0);
+  setTimeout(() => { const w = $e('edWords'); if (w) { w.focus(); w.select(); } }, 60);
+}
+// drawn like the lyrics (same animation code and line fitting), each at its own place; several can be on at once
+function edTexts(t) {
+  const P = ED.plan, box = $e('edTxt'); if (!box) return;
+  ED.txtKey = ED.txtKey || {};
+  const on = new Set();
+  (S.config.texts || []).forEach((x, k) => {
+    if (!(t >= x.start && t < x.end) || !(x.lines || []).length) return;
+    const id = 't' + k; on.add(id);
+    const L = Object.assign(edLook(), x.style || {}), eff = x.anim || P.anim.in, fx = Anim.FX[eff] || Anim.FX.fade, ps = x.pos || { x: 0, y: 0.72 };
+    let el = box.querySelector(`[data-t="${id}"]`); if (!el) { el = document.createElement('div'); el.dataset.t = id; el.style.cssText = 'position:absolute;inset:0'; box.appendChild(el); }
+    const key = JSON.stringify([x.lines, ps, L.lyrics_font, L.lyrics_weight, L.lyrics_size, L.lyrics_fill_left, L.lyrics_fill_mid, L.lyrics_fill_right, L.lyrics_outline, L.lyrics_outline_w, L.lyrics_glow, eff, P.k, ED.fontsReady]);
+    if (ED.txtKey[id] !== key) {
+      const font = fontCss(L.lyrics_font), [lines, size] = fitLines(x.lines, font, L.lyrics_weight, L.lyrics_size * P.k, P.canvas[0] * 0.9, L.lyrics_outline_w);
+      el.innerHTML = `<div class="blk" style="position:absolute;left:${4 + ps.x * 100}%;right:${4 - ps.x * 100}%;top:${ps.y * 100}%">` + Anim.html(lines, { font, weight: L.lyrics_weight, size, left: L.lyrics_fill_left, mid: L.lyrics_fill_mid,
+        right: L.lyrics_fill_right, outline: L.lyrics_outline, ow: L.lyrics_outline_w, glow: L.lyrics_glow, lh: 1.35 }, fx.unit) + '</div>';
+      Anim.prepare(el); ED.txtKey[id] = key;
+    }
+    const len = x.end - x.start, din = Math.min(+S.config.text_anim.in_seconds || .5, len * .45), dout = Math.min(+S.config.text_anim.out_seconds || .3, len * .4), om = P.anim.out, local = t - x.start;
+    let name = eff === 'none' ? 'fade' : eff, p = 1;
+    if (eff !== 'none' && local < din) p = local / din;
+    else if (om !== 'cut' && eff !== 'none' && x.end - t < dout) { p = (x.end - t) / dout; if (om === 'fade') name = 'fade'; }
+    Anim.apply(el, name, p, { W: P.canvas[0], H: P.canvas[1] });
+  });
+  [...box.children].forEach(el => { if (!on.has(el.dataset.t)) { el.remove(); delete ED.txtKey[el.dataset.t]; } });
+}
+
+function edInlineText(tid) {
+  const k = +tid.slice(1), el = $e('edTxt').querySelector(`[data-t="${tid}"]`); if (!el) return;
+  ED.vid.pause(); edSelect({ kind: 'text', k });
+  const r = el.firstElementChild.getBoundingClientRect(), st = $e('edStage').getBoundingClientRect(), old = $e('edInline'); if (old) old.remove();
+  const ta = document.createElement('textarea'); ta.id = 'edInline'; ta.value = (S.config.texts[k].lines || []).join('\n');
+  const w = st.width * 0.8;
+  Object.assign(ta.style, { left: (st.width - w) / 2 + 'px', top: Math.max(4, Math.min(st.height - 80, r.top - st.top - 8)) + 'px', width: w + 'px', height: Math.max(60, r.height + 16) + 'px' });
+  $e('edStage').appendChild(ta); ta.focus(); ta.select();
+  ta.oninput = () => { edWords(tid, ta.value); const pw = $e('edWords'); if (pw) pw.value = ta.value; };
+  ta.onkeydown = e => { e.stopPropagation(); if (e.key === 'Escape' || (e.key === 'Enter' && (e.metaKey || e.ctrlKey))) ta.blur(); };
+  ta.onblur = () => { ta.remove(); edPanel(); edRefreshSoon(); };
 }

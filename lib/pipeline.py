@@ -468,7 +468,7 @@ def output_plan(c, name, mode, rng, B, say=log):
         H = round(W * 16 / 9) // 2 * 2
         wl = W
         canvas, pw, layout, kc = (1080, 1920), W, None, 1.0
-    k = oc.get("text_scale", 1.0)
+    k = float(oc.get("text_scale") or 1.0)               # saved by the page as a number or as text ("1")
     if name == "reel":                                   # the part of the song this video covers (screens outside it are not drawn)
         clip = reel_range(oc, times, len(screens), dur)
         say(f"REEL {mmss(clip[0])}-{mmss(clip[1])} ({mmss(clip[1] - clip[0])} long)")
@@ -489,6 +489,16 @@ def output_plan(c, name, mode, rng, B, say=log):
             length = s["end"] - s["start"]
             fx_s = s.get("fx_in") if s.get("fx_in") in R.ANIM_FX else eff        # a screen's own animation, else the video's
             sc.append(dict(s, fx=fx_s, din=round(min(float(ta.get("in_seconds", .5)), length * .45), 3), dout=round(min(float(ta.get("out_seconds", .3)), length * .4), 3)))
+    texts = []                                         # free text (titles, thanks ..): drawn like lyric screens, at its own place and time
+    for ti, x in enumerate(conf.get("texts") or []):
+        lines = [l for l in (x.get("lines") or []) if l.strip()]
+        st0, en0 = x.get("start"), x.get("end")
+        if not lines or st0 is None or en0 is None or float(en0) <= float(st0) or float(en0) <= clip[0] or float(st0) >= clip[1]:
+            continue
+        length = float(en0) - float(st0)
+        texts.append({"section": "text", "lines": lines, "src": [], "start": float(st0), "end": float(en0), "i": f"t{ti}",
+                      "fx": x.get("anim") if x.get("anim") in R.ANIM_FX else eff, "pos": x.get("pos") or {"x": 0, "y": 0.72}, "style": style_of(x.get("style")),
+                      "din": round(min(float(ta.get("in_seconds", .5)), length * .45), 3), "dout": round(min(float(ta.get("out_seconds", .3)), length * .4), 3)})
     pics = []
     if oc.get("opening", True) and conf["opening"].get("enabled", True):
         o_end = min(float(conf["opening"].get("seconds") or 6), dur / 3)
@@ -545,7 +555,7 @@ def output_plan(c, name, mode, rng, B, say=log):
     return {"output": name, "label": oc["label"], "size": [W, H], "wl": wl, "canvas": list(canvas), "pw": pw, "layout": layout or {"mode": "portrait"}, "kc": kc, "k": k,
             "clip": [round(clip[0], 3), round(clip[1], 3)], "dur": dur, "fade": float(oc.get("fade") or 0), "look": look,
             "anim": {"in": eff, "out": out_mode}, "screens": sc, "pics": keep, "pre": zoom_pre(wl, H),
-            "logo": {"kind": "logo"}, "bg_blur": round(bg_blur, 5), "video": B["video"], "effects": effects}
+            "logo": {"kind": "logo"}, "bg_blur": round(bg_blur, 5), "video": B["video"], "effects": effects, "texts": texts}
 
 
 def video_fx(P, work):
@@ -620,7 +630,7 @@ def build_output(c, name, mode, rng, B, frame, R, src, work, out):
     wl = P["wl"]
     eff, out_mode = P["anim"]["in"], P["anim"]["out"]
     layout = P["layout"] if P["layout"]["mode"] == "side" else None
-    sc = P["screens"]
+    sc = P["screens"] + P["texts"]                      # lyric screens and free text are drawn the same way
     sh = R.Shots(look, pw, canvas, extra_fonts={s["style"]["lyrics_font"] for s in sc if s.get("style") and s["style"].get("lyrics_font")})
     log(f"STEP drawing {len(sc)} lyric screens (animation: {eff})")
     for n, s in enumerate(sc):
@@ -654,7 +664,7 @@ def build_output(c, name, mode, rng, B, frame, R, src, work, out):
     clip = tuple(P["clip"])
     vfx = video_fx(P, work)
     R.compose(src, sc, logo, P["pics"], out / f"{name}_{mode}.mp4", (W, H), layout, 30, dur_total=P["dur"], clip=clip, fade=P["fade"], audio=aligned_audio(c, work, P["dur"]), vfx=vfx, effects=P["effects"])
-    report = {"output": name, "size": [W, H], "clip": clip, "screens": [{"lines": s["lines"], "start": s["start"], "end": s["end"]} for s in sc],
+    report = {"output": name, "size": [W, H], "clip": clip, "screens": [{"lines": s["lines"], "start": s["start"], "end": s["end"], "kind": s.get("section")} for s in sc],
               "pictures": [{k2: v for k2, v in p.items() if k2 not in ("image",)} for p in P["pics"]]}
     (out / f"{name}_report.json").write_text(json.dumps(report, indent=1, ensure_ascii=False, default=str), encoding="utf-8")
     for p in P["pics"]:

@@ -1,0 +1,10 @@
+{
+  "name": "cover-songs-desktop",
+  "productName": "Cover Songs",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sample Mac app around the Cover Songs settings page",
+  "main": "main.js",
+  "scripts": { "start": "electron ." },
+  "devDependencies": { "electron": "45.2.1" }
+}
