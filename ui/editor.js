@@ -1265,39 +1265,106 @@ function edBgSample(id) {
   let x = 0, y = base.height * 0.1, w = base.width, h = base.height * 0.2;
   if (blk) { const r = blk.getBoundingClientRect(), k = base.width / st.width; x = Math.max(0, (r.left - st.left) * k); y = Math.max(0, (r.top - st.top) * k); w = Math.min(base.width - x, r.width * k); h = Math.min(base.height - y, Math.max(20, r.height * k)); }
   const d = base.getContext('2d').getImageData(x, y, Math.max(1, w), Math.max(1, h)).data;
-  let R = 0, G = 0, B = 0, n = 0; const hues = new Array(12).fill(0);
-  for (let i = 0; i < d.length; i += 16) { const r = d[i], g = d[i + 1], b = d[i + 2]; R += r; G += g; B += b; n++;
+  let R = 0, G = 0, B = 0, n = 0; const hues = new Array(12).fill(0), ls = [];
+  for (let i = 0; i < d.length; i += 16) { const r = d[i], g = d[i + 1], b = d[i + 2]; R += r; G += g; B += b; n++; ls.push(lum(hex(r, g, b)));
     const mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx ? (mx - mn) / mx : 0;
     if (sat > .15 && mx > 40) { let hh = mx === r ? (g - b) / (mx - mn) : mx === g ? 2 + (b - r) / (mx - mn) : 4 + (r - g) / (mx - mn); hh = (hh * 60 + 360) % 360; hues[Math.floor(hh / 30)] += sat; } }
   const avg = hex(R / n, G / n, B / n), top = hues.indexOf(Math.max(...hues)), colourful = Math.max(...hues) / n > 0.05;
   const crop = document.createElement('canvas'); crop.width = 160; crop.height = 50; crop.getContext('2d').drawImage(base, x, y, Math.max(1, w), Math.max(1, h), 0, 0, 160, 50);
-  return { avg, dark: lum(avg) < 0.22, hue: colourful ? top * 30 + 15 : null, crop: crop.toDataURL('image/jpeg', .8) };
+  ls.sort((a, b) => a - b); const pct = q => ls[Math.min(ls.length - 1, Math.floor(q * ls.length))] || 0;
+  const second = hues.map((v, i) => [v, i]).sort((a, b) => b[0] - a[0])[1];
+  return { avg, dark: lum(avg) < 0.22, hue: colourful ? top * 30 + 15 : null, hue2: second && second[0] / n > 0.03 ? second[1] * 30 + 15 : null,
+    lo: pct(.1), hi: pct(.9), busy: pct(.9) - pct(.1), crop: crop.toDataURL('image/jpeg', .8) };
 }
-function suggestPalettes(bg) {
-  const H = bg.hue == null ? 330 : bg.hue, dark = bg.dark, L1 = dark ? 74 : 32, L2 = dark ? 90 : 18, ol = dark ? hsl(H, 45, 7) : '#ffffff', gl = c => c;
-  const mk = (name, a, b, c, glow) => ({ name, c: [a, b, c, dark ? ol : hsl(H + 180, 30, 96), glow] });
-  const ideas = [
-    mk('Opposite colour', hsl(H + 180, 90, L1), hsl(H + 180, 40, L2), hsl(H + 150, 90, L1), hsl(H + 180, 90, 50)),
-    mk('Two opposites', hsl(H + 150, 90, L1), hsl(H + 180, 30, L2), hsl(H + 210, 90, L1), hsl(H + 200, 85, 45)),
-    mk('Triad', hsl(H + 120, 85, L1), hsl(H + 180, 30, L2), hsl(H + 240, 85, L1), hsl(H + 240, 80, 45)),
-    mk('Matches the scene', hsl(H - 30, 85, L1), hsl(H, 35, L2), hsl(H + 30, 85, L1), hsl(H, 85, 45)),
-    mk(dark ? 'Gold' : 'Deep red', dark ? '#ffe45e' : '#9b0d2a', dark ? '#fff4bf' : '#5a0618', dark ? '#ffb300' : '#c2185b', dark ? '#ff9800' : '#ff8fb1'),
-    mk(dark ? 'Clean white' : 'Ink', dark ? '#ffffff' : '#1a1030', dark ? '#ffffff' : '#120a22', dark ? '#e8f4ff' : '#2b1650', dark ? '#7a8cff' : '#ffffff'),
-    mk('Neon', dark ? '#3ff8ff' : '#0077aa', dark ? '#ffffff' : '#00334d', dark ? '#ff4fd8' : '#b0007a', dark ? '#b14bff' : '#7fe6ff'),
-    mk(dark ? 'Pastel' : 'Rich', dark ? '#ffb3d1' : '#7a1fa2', dark ? '#fff0f6' : '#3b0a52', dark ? '#a8e6ff' : '#0b5ca8', dark ? '#d4a3ff' : '#ffd1f0'),
-  ];
-  // keep the ones that stand out from the background; your saved colours first when they do
+// colour sets for words over a picture, built like her reference video: a gradient of three colours (left → middle → right),
+// a dark (or light) outline and a coloured glow. [name, left, middle, right, outline, glow]
+const COLOUR_SETS = [
+  ['Her style', '#ff4f8b', '#f2dcec', '#7fe6e0', '#0d0620', '#6a3bd9'], ['Candy pop', '#ff5fa2', '#fff0f6', '#7b6cff', '#1a0a2e', '#ff3d9a'],
+  ['Tropic', '#ffd166', '#fffbe6', '#06d6a0', '#052b22', '#118ab2'], ['Sunset', '#ff7e5f', '#ffe8d6', '#ff4f9a', '#260712', '#ffb347'],
+  ['Neon ocean', '#00f5ff', '#e6fdff', '#9b5cff', '#0a0626', '#00b4d8'], ['Flamingo & teal', '#ff6f91', '#ffe3ec', '#2ec4b6', '#160a1a', '#ff9671'],
+  ['Royal', '#c084fc', '#f5e8ff', '#f472b6', '#12051f', '#6366f1'], ['Mango & lime', '#ffb703', '#fff7e0', '#9ef01a', '#1b2a05', '#fb8500'],
+  ['Aurora', '#43e97b', '#eafff1', '#38f9d7', '#04201a', '#7f5af0'], ['Berry', '#ff4d6d', '#ffe0ea', '#ff8fab', '#1f0510', '#c9184a'],
+  ['Peacock', '#00c2d1', '#e0fbff', '#3a86ff', '#021a2b', '#06d6a0'], ['Gold & rose', '#ffd700', '#fff6d5', '#ff69b4', '#2a1500', '#ff9e00'],
+  ['Lavender & mint', '#b8a1ff', '#f4f0ff', '#7fffd4', '#120f2b', '#9b5de5'], ['Fire', '#ff0054', '#ffe5ec', '#ffbd00', '#2b0010', '#ff5400'],
+  ['Ice', '#a2d2ff', '#ffffff', '#cdb4db', '#0b1a33', '#4895ef'], ['Electric', '#f72585', '#ffe6f2', '#4cc9f0', '#10002b', '#7209b7'],
+  ['Peach sky', '#ffafcc', '#fff1f6', '#a2d2ff', '#2b1a2f', '#bde0fe'], ['Marigold & magenta', '#ffb000', '#fff2cc', '#ff1f8e', '#2a0a00', '#ff5e00'],
+  ['Holi', '#ff006e', '#fff0f5', '#3a86ff', '#120024', '#8338ec'], ['Emerald & gold', '#2ee59d', '#f0fff4', '#f4c430', '#032016', '#11998e'],
+  ['Coral & teal', '#ff6b6b', '#fff3f0', '#4ecdc4', '#1a0d0d', '#ffe66d'], ['Plum sunrise', '#c77dff', '#f3e8ff', '#ff9e00', '#12061f', '#7b2cbf'],
+  ['Cotton candy', '#ffc8dd', '#ffffff', '#bde0fe', '#33203a', '#cdb4db'], ['Kesari', '#ff9933', '#fff4e6', '#ff4f8b', '#2a1200', '#ffd166'],
+  ['Mehndi', '#a7c957', '#f2f7e6', '#f9c74f', '#1a2405', '#6a994e'], ['Rani pink', '#ff1f8e', '#ffe0f0', '#ff9ecf', '#240012', '#b5179e'],
+  ['Peacock feather', '#2ec4b6', '#e8fffb', '#7b2cbf', '#031c19', '#3a86ff'], ['Lotus', '#ff8fab', '#fff0f5', '#ffd6e0', '#2b0f18', '#fb6f92'],
+  ['Twilight', '#7b6cff', '#ece9ff', '#ff6fb5', '#0d0a26', '#4cc9f0'], ['Citrus', '#ffe45e', '#fffbe0', '#ff9f1c', '#2b2100', '#2ec4b6'],
+  ['Mint & coral', '#64dfdf', '#ecfffe', '#ff8c94', '#062424', '#80ffdb'], ['Galaxy', '#a855f7', '#f3e8ff', '#22d3ee', '#0b0418', '#ec4899'],
+  ['Rose gold', '#f4a6b5', '#fff1ee', '#e7b37a', '#2a1410', '#ff7a95'], ['Lagoon', '#48cae4', '#eafcff', '#90e0ef', '#022a35', '#0077b6'],
+  // three colours that run into each other (as in her videos: red, pink, teal, purple ..)
+  ['Red · pink · teal', '#ff3b3b', '#ff7ac8', '#2ee6d6', '#14051a', '#8a3bff'], ['Pink · gold · cyan', '#ff4f8b', '#ffd166', '#4cc9f0', '#120a24', '#7209b7'],
+  ['Purple · pink · orange', '#9b5cff', '#ff6fb5', '#ffa630', '#12061f', '#ff3d9a'], ['Teal · lime · gold', '#00c9a7', '#c6f432', '#ffc93c', '#062018', '#00a8e8'],
+  ['Magenta · violet · sky', '#ff2ec4', '#a970ff', '#4cc9f0', '#10052a', '#ff7ae6'], ['Coral · peach · mint', '#ff5e5b', '#ffb88c', '#3ee6b2', '#1c0808', '#ff9a8b'],
+  ['Orange · pink · purple', '#ff8c42', '#ff4f8b', '#b06cff', '#1a0612', '#ffd166'], ['Gold · coral · plum', '#ffd23f', '#ff6b6b', '#c86bfa', '#1d0a14', '#ff9f1c'],
+  ['Cyan · blue · pink', '#3ef0ff', '#5b8cff', '#ff6fd8', '#060a26', '#a855f7'], ['Lime · cyan · violet', '#b5f44a', '#3ee0ff', '#9b6bff', '#0b1606', '#3a86ff'],
+  // deep "ink" sets for bright backgrounds: dark gradients with a light outline and glow
+  ['Jewel ink', '#7b1fa2', '#3c0b52', '#1565c0', '#ffffff', '#ffd6f5'], ['Wine & teal ink', '#9d0208', '#370617', '#005f73', '#fff6f0', '#ffd6e0'],
+  ['Forest ink', '#1b4332', '#081c15', '#7f4f24', '#fefae0', '#b7e4c7'], ['Navy & rose ink', '#14213d', '#0b1020', '#9a031e', '#ffffff', '#ffc2d1'],
+  ['Plum ink', '#4a0e4e', '#22052b', '#81007f', '#fff0ff', '#f3c4fb'], ['Chocolate & gold', '#432818', '#1f0f05', '#bb8a52', '#fff3e0', '#ffe8a3'],
+];
+function hsl2(h, s, l) { return hsl(h, s, l); }
+function hueOf(hx) { const c = [1, 3, 5].map(i => parseInt(hx.slice(i, i + 2), 16) / 255), mx = Math.max(...c), mn = Math.min(...c), d = mx - mn;
+  if (!d) return { h: 0, s: 0 }; let h = mx === c[0] ? ((c[1] - c[2]) / d) % 6 : mx === c[1] ? (c[2] - c[0]) / d + 2 : (c[0] - c[1]) / d + 4; return { h: (h * 60 + 360) % 360, s: d / (1 - Math.abs(mx + mn - 1) || 1) }; }
+const hueGap = (a, b) => { const d = Math.abs(a - b) % 360; return Math.min(d, 360 - d); };
+const HUE_NAMES = [[15, 'red'], [40, 'orange'], [55, 'gold'], [80, 'yellow'], [150, 'green'], [175, 'teal'], [195, 'cyan'], [215, 'sky blue'], [245, 'blue'], [275, 'violet'], [300, 'purple'], [330, 'magenta'], [350, 'pink'], [361, 'red']];
+const hueName = h => { h = ((h % 360) + 360) % 360; return HUE_NAMES.find(([lim]) => h < lim)[1]; };
+// sets worked out from the picture: harmonies against its main colour, each a gradient with a contrasting glow; bright letters with a
+// dark outline, and (for mid-tone or bright pictures) deep letters with a light outline
+function harmonySets(bg) {
+  const H = bg.hue == null ? 300 : bg.hue, out = [], modes = [];
+  if (bg.dark || lum(bg.avg) < .45) modes.push('light'); if (!bg.dark) modes.push('ink');
+  const pairs = [[150, 210, 180], [120, 240, 60], [90, 270, 180], [160, 200, 300], [180, 240, 120], [180, 120, 240], [30, 330, 180], [200, 280, 150], [60, 180, 300]];
+  for (let r = 0; r < 360; r += 45) pairs.push([90 + r, 210 + r, 150 + r]);                  // a sweep round the wheel
+  if (bg.hue2 != null) pairs.push([180, bg.hue2 - H + 180, (bg.hue2 - H) / 2 + 90]);
+  modes.forEach(m => pairs.forEach(([a, b, g]) => { const h1 = H + a, h2 = H + b, light = m === 'light';
+    out.push({ name: `${hueName(h1)[0].toUpperCase() + hueName(h1).slice(1)} & ${hueName(h2)}${light ? '' : ' ink'}`, made: true,
+      c: [hsl(h1, 90, light ? 66 : 30), hsl((h1 + h2) / 2 + 180, 80, light ? 80 : 22), hsl(h2, 90, light ? 66 : 30), light ? hsl(H, 45, 7) : '#ffffff', hsl(H + g, 85, light ? 52 : 80)] }); }));   // a third colour in the middle
+  return out;
+}
+// every candidate is scored against what is behind the words; the best varied ones are shown.
+// Readable: the letters stand out from their own outline, and the letters or the outline stand out from the picture (its worst spot).
+function suggestPalettes(bg, page) {
+  const g = v => hex(...[0, 0, 0].map(() => Math.round(255 * Math.pow(Math.max(0, Math.min(1, v)), 1 / 2.2))));
+  const hiHex = g(bg.hi), loHex = g(bg.lo);
+  const lib = COLOUR_SETS.map(c => ({ name: c[0], c: c.slice(1) }));
   const favs = (ED.favs || []).map(f => ({ name: '★ ' + f.name, c: f.c, fav: true }));
-  return [...favs, ...ideas].map(p => Object.assign(p, { score: Math.min(contrast(p.c[1], bg.avg), contrast(p.c[0], bg.avg)) }))
-    .filter(p => p.score >= 2.2 || p.fav).sort((a, b) => (b.fav - a.fav) || (b.score - a.score)).slice(0, 10);
+  const all = [...favs, ...lib, ...harmonySets(bg)].map(p => {
+    const stops = [p.c[0], p.c[1], p.c[2]], ol = p.c[3];
+    const lightText = lum(p.c[1]) > lum(ol), worst = lightText ? hiHex : loHex;           // light letters fight the brightest spot, dark ones the darkest
+    if (!p.fav && ((!lightText && bg.dark) || (lightText && lum(bg.avg) > .6))) return Object.assign(p, { con: 0, score: 0 });   // dark letters on a dark picture (or light on light): readable only by the outline
+    const sep = Math.min(...stops.map(x => contrast(x, ol)));                              // letters against their outline
+    const vsBg = Math.max(Math.min(...stops.map(x => Math.min(contrast(x, bg.avg), contrast(x, worst)))), Math.min(contrast(ol, bg.avg), contrast(ol, worst)) * 0.8);
+    const con = Math.min(sep, 8) * 0.55 + Math.min(vsBg, 6) * 0.45;
+    const hl = hueOf(p.c[0]), hr = hueOf(p.c[2]), spread = hueGap(hl.h, hr.h) * Math.min(hl.s, hr.s);      // a real gradient, not one colour
+    const away = bg.hue == null ? 90 : Math.min(hueGap(hl.h, bg.hue), hueGap(hr.h, bg.hue));               // not the background's own colour
+    const hm = hueOf(p.c[1]), vivid = (hl.s + hr.s + hm.s) / 3, glowPop = contrast(p.c[4], bg.avg);       // colourful all along, middle included
+    const score = Math.min(con, 7) / 7 * 0.4 + Math.min(spread, 150) / 150 * 0.22 + Math.min(away, 90) / 90 * 0.12 + vivid * 0.21 + Math.min(glowPop, 4) / 4 * 0.05 + (p.fav ? 0.08 : 0);
+    return Object.assign(p, { con, vsBg, score });
+  }).filter(p => p.con >= (bg.busy > .35 ? 3.4 : 3) || p.fav).sort((a, b) => b.score - a.score);
+  const picked = [];                                                    // varied: no two with nearly the same ends
+  for (const p of all) { const h = [hueOf(p.c[0]).h, hueOf(p.c[2]).h];
+    if (picked.some(q => hueGap(q.h[0], h[0]) < 22 && hueGap(q.h[1], h[1]) < 22 && Math.abs(lum(q.c[1]) - lum(p.c[1])) < .2)) continue;
+    picked.push(Object.assign(p, { h })); }
+  ED.ideaCount = picked.length;
+  return picked.slice(page * 12, page * 12 + 12);
 }
-function edIdeas(jid) {
+function edIdeas(jid, more) {
   const id0 = typeof jid === 'string' ? jid.replace(/'/g, '') : jid; jid = typeof id0 === 'string' ? `'${id0}'` : id0;   // "t0" or 3, quoted for the buttons
-  const bg = edBgSample(jid), box = $e('edIdeas'); if (!box) return;
+  ED.ideaPage = more ? (ED.ideaPage || 0) + 1 : 0;
+  const bg = more && ED.ideaBg ? ED.ideaBg : (ED.ideaBg = edBgSample(jid)), box = $e('edIdeas'); if (!box) return;
   const L = Object.assign({}, S.config.look, ED.styleAll && !isText(id0) ? {} : styleOf(id0) || {}), words = (isText(id0) ? (S.config.texts[+id0.slice(1)].lines || [''])[0] : $e('edLyr').innerText.split('\n')[0]) || 'Soujanya';
-  const html = suggestPalettes(bg).map(p => `<div class="idea" title="Contrast ${p.score.toFixed(1)}">
-    <div class="ideabg" style="background-image:url(${bg.crop})" onclick='setStyle(${jid},${JSON.stringify(palVals(p.c))})'>${gtext([words.slice(0, 16)], { font: fontCss(L.lyrics_font), weight: L.lyrics_weight, size: 22, left: p.c[0], mid: p.c[1], right: p.c[2], outline: p.c[3], ow: L.lyrics_outline_w, glow: p.c[4] })}</div>
+  let list = suggestPalettes(bg, ED.ideaPage); if (!list.length && ED.ideaPage) { ED.ideaPage = 0; list = suggestPalettes(bg, 0); }
+  const pages = Math.ceil((ED.ideaCount || 0) / 12);
+  const html = list.map(p => `<div class="idea" title="Readability ${p.con.toFixed(1)} (letters against their outline and the picture)${p.made ? ' · worked out from this picture' : ' · from the library'}">
+    <div class="ideabg" style="background-image:url(${bg.crop})" onclick='setStyle(${jid},${JSON.stringify(palVals(p.c))})'>${gtext([words.slice(0, 14)], { font: fontCss(L.lyrics_font), weight: L.lyrics_weight, size: 17, left: p.c[0], mid: p.c[1], right: p.c[2], outline: p.c[3], ow: L.lyrics_outline_w, glow: p.c[4] })}</div>
     <div class="row" style="gap:4px;justify-content:space-between"><small>${esc(p.name)}</small>${p.fav ? '' : `<button class="small" title="Save: offered again in every song" onclick='edFav(${JSON.stringify({ name: p.name, c: p.c })})'>♥</button>`}</div></div>`).join('')
+    + (pages > 1 ? `<div style="flex-basis:100%"><button class="small" onclick="edIdeas(${typeof id0 === 'string' ? `'${id0}'` : id0},true)">More ideas (${ED.ideaPage + 1} of ${pages})</button>
+      <span class="hint" style="margin:0 0 0 6px">${ED.ideaCount} sets stand out here, best first; each is a gradient with an outline and a glow.</span></div>` : '')
     || '<span class="hint">No idea stands out enough here: try the colour pickers.</span>';
   ED.ideas = { id: id0, html }; box.innerHTML = html;
 }
